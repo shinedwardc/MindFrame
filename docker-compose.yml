@@ -6,9 +6,28 @@ services:
       POSTGRES_PASSWORD: mindframe
       POSTGRES_DB: mindframe
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
 volumes:
   postgres_data:
+
+# image: postgres:16 — pulls the official Postgres 16 image from Docker Hub and runs it as a container.
+
+# environment — sets the initial database credentials inside the container:
+# - POSTGRES_USER / POSTGRES_PASSWORD → login credentials
+# - POSTGRES_DB → creates this database on first startup
+
+# ports: "5432:5432" — maps container port 5432 to your host port 5432. This is why your app can connect
+# to localhost:5432 — Docker forwards it into the container.
+
+# volumes: postgres_data — persists the database files to a named Docker volume. Without this, all data
+# would be wiped every time the container stops.
+
+# So the connection string in db/session.py:
+# postgresql+psycopg://mindframe:mindframe@localhost:5432/mindframe
+# ...uses exactly the credentials and database name defined in docker-compose.yml. They have to match.
+
+# docker compose up -d starts Postgres in the background. Your FastAPI app then connects to it like any
+# regular local database — it just happens to be running inside a container.

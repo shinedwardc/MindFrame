@@ -9,7 +9,7 @@ load_dotenv()
 config = context.config
 config.set_main_option(
     "sqlalchemy.url",
-    os.getenv("DATABASE_URL", "postgresql://mindframe:mindframe@localhost:5432/mindframe"),
+    os.getenv("DATABASE_URL"),
 )
 
 if config.config_file_name is not None:

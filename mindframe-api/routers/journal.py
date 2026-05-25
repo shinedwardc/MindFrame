@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from models.journal import JournalEntryCreate, JournalEntryResponse
 from db.session import get_db
 from db.models.journal import JournalEntry
-from services.openai_service import analyze_journal_entry
+from services.claude_service import analyze_journal_entry
 
 router = APIRouter()
 

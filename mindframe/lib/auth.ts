@@ -20,3 +20,29 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     },
   },
 })
+
+  /* Server component auth flow breakdown example: 
+  - Middleware runs first on every request, calls auth() to check for valid session cookie; if missing/invalid, redirects to landing page
+  - Server component calls auth()
+  - Auth.js calls cookies() from next/headers
+  - cookies() reads from Next.js AsyncLocalStorage — the request context Next.js stored before your
+  component ran
+  - Reads next-auth.session-token cookie value
+  - Verifies JWT signature with NEXTAUTH_SECRET
+  - Decodes payload: { id, name, email, picture, iat, exp }
+  - Runs jwt() callback — user is undefined here so if (user) is skipped, token passes through unchanged
+  - Builds session object: { user: { name, email, image }, expires }
+  - Runs your session() callback (auth.ts:17): session.user.id = token.id
+  - Returns the final session object
+  */
+
+  /* Login flow breakdown example:
+  - User clicks "Sign in with Google" button in client component, which calls signIn('google')
+  - NextAuth redirects to Google login page; user enters credentials
+  - Google redirects back to /api/auth/callback/google with code in query string
+  - NextAuth gets user info from Google
+  - Runs jwt() callback — this time user is defined, so token.id = user.id is set
+  - JWT is signed with NEXTAUTH_SECRET and set as next-auth.session-token cookie
+  - session() callback is run on next request, exposing token.id as session.user.id
+  - Redirects to dashboard page
+  */

@@ -4,16 +4,17 @@ token on every request, and throws on non-OK responses. Every page or server act
 instead of raw fetch. 
 */
 
-import { auth } from '@/lib/auth'
+import { cookies } from 'next/headers'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const session = await auth()
+  const cookieStore = await cookies()
+  const token = cookieStore.get('next-auth.session-token')?.value
 
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
-    ...(session && { Authorization: `Bearer ${session}` }),
+    ...(token && { Authorization: `Bearer ${token}` }),
     ...options.headers,
   }
 
