@@ -11,11 +11,26 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
 	session: { strategy: 'jwt' },
 	callbacks: {
 		jwt({ token, user }) {
-			if (user) token.id = user.id;
+			// Called on every JWT creation or access (login + every request).
+			// On login: user is defined (Google's data) — this is the only time token fields are set.
+			// On every subsequent request (auth() calls, middleware): user is undefined, token passes through unchanged.
+			// Returns: { id, picture, name, email, iat, exp }
+			if (user) {
+				token.id = user.id;
+				token.name = user.name;
+				token.email = user.email;
+				token.picture = user.image;
+			}
 			return token;
 		},
 		session({ session, token }) {
+			// Called on every auth() call after jwt() runs — never called on login directly.
+			// Receives the token jwt() returned and shapes it into the session object your app sees.
+			// Returns: { user: { name, email, image, id }, expires }
 			session.user.id = token.id as string;
+			session.user.name = token.name as string;
+			session.user.email = token.email as string;
+			session.user.image = token.picture as string;
 			return session;
 		},
 	},

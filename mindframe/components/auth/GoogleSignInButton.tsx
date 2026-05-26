@@ -1,6 +1,6 @@
 import { Roboto } from 'next/font/google';
 import { Button } from '@/components/ui/button';
-import { signIn } from '@/lib/auth';
+import { signInWithGoogle } from '@/lib/actions/auth-actions';
 
 const roboto = Roboto({ subsets: ['latin'], weight: '500' });
 
@@ -35,12 +35,7 @@ function GoogleIcon() {
 
 export default function GoogleSignInButton() {
 	return (
-		<form
-			action={async () => {
-				'use server';
-				await signIn('google');
-			}}
-		>
+		<form action={signInWithGoogle}>
 			<Button
 				type="submit"
 				variant="outline"
