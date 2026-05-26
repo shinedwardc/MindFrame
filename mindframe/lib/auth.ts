@@ -3,25 +3,25 @@ NextAuth config using JWT strategy (no DB writes from Next.js). Exports auth, ha
 the four things you'll import throughout the app. The jwt callback attaches the user ID to the token; the session
 callback exposes it to client components.
 */
-import NextAuth from 'next-auth'
-import Google from 'next-auth/providers/google'
+import NextAuth from 'next-auth';
+import Google from 'next-auth/providers/google';
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
-  providers: [Google],
-  session: { strategy: 'jwt' },
-  callbacks: {
-    jwt({ token, user }) {
-      if (user) token.id = user.id
-      return token
-    },
-    session({ session, token }) {
-      session.user.id = token.id as string
-      return session
-    },
-  },
-})
+	providers: [Google],
+	session: { strategy: 'jwt' },
+	callbacks: {
+		jwt({ token, user }) {
+			if (user) token.id = user.id;
+			return token;
+		},
+		session({ session, token }) {
+			session.user.id = token.id as string;
+			return session;
+		},
+	},
+});
 
-  /* Server component auth flow breakdown example: 
+/* Server component auth flow breakdown example: 
   - Middleware runs first on every request, calls auth() to check for valid session cookie; if missing/invalid, redirects to landing page
   - Server component calls auth()
   - Auth.js calls cookies() from next/headers
@@ -36,7 +36,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
   - Returns the final session object
   */
 
-  /* Login flow breakdown example:
+/* Login flow breakdown example:
   - User clicks "Sign in with Google" button in client component, which calls signIn('google')
   - NextAuth redirects to Google login page; user enters credentials
   - Google redirects back to /api/auth/callback/google with code in query string
