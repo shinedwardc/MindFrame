@@ -27,8 +27,8 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
   - Auth.js calls cookies() from next/headers
   - cookies() reads from Next.js AsyncLocalStorage — the request context Next.js stored before your
   component ran
-  - Reads next-auth.session-token cookie value
-  - Verifies JWT signature with NEXTAUTH_SECRET
+  - Reads authjs.session-token cookie value
+  - Verifies JWT signature with AUTH_SECRET
   - Decodes payload: { id, name, email, picture, iat, exp }
   - Runs jwt() callback — user is undefined here so if (user) is skipped, token passes through unchanged
   - Builds session object: { user: { name, email, image }, expires }
@@ -42,7 +42,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
   - Google redirects back to /api/auth/callback/google with code in query string
   - NextAuth gets user info from Google
   - Runs jwt() callback — this time user is defined, so token.id = user.id is set
-  - JWT is signed with NEXTAUTH_SECRET and set as next-auth.session-token cookie
+  - JWT is signed with AUTH_SECRET and set as authjs.session-token cookie
   - session() callback is run on next request, exposing token.id as session.user.id
   - Redirects to dashboard page
   */

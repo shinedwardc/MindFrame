@@ -10,7 +10,10 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
 	const cookieStore = await cookies();
-	const token = cookieStore.get('next-auth.session-token')?.value;
+	// FastAPI needs the raw JWT cookie string to verify the signature using JWT_SECRET
+	const token = cookieStore.get('authjs.session-token')?.value;
+
+	if (!token) throw new Error('No auth token found; user is not authenticated');
 
 	const headers: HeadersInit = {
 		'Content-Type': 'application/json',
