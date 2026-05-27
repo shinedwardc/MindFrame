@@ -2,10 +2,10 @@
 
 import { signIn, signOut } from '@/lib/auth';
 
-export async function signInWithGoogle() {
+export const signInWithGoogle = async () => {
 	await signIn('google', { redirectTo: '/dashboard' });
-}
+};
 
-export async function signOutAction() {
+export const signOutAction = async () => {
 	await signOut({ redirectTo: process.env.AUTH_URL ?? 'http://localhost:3000' });
-}
+};

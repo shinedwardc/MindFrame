@@ -8,7 +8,7 @@ import { cookies } from 'next/headers';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 
-export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+export const apiFetch = async <T>(path: string, options: RequestInit = {}): Promise<T> => {
 	const cookieStore = await cookies();
 	// FastAPI needs the raw JWT cookie string to verify the signature using JWT_SECRET
 	const token = cookieStore.get('authjs.session-token')?.value;
@@ -26,4 +26,4 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
 	if (!res.ok) throw new Error(`API error ${res.status}: ${res.statusText}`);
 
 	return res.json() as Promise<T>;
-}
+};

@@ -1,8 +1,8 @@
-import { AppSidebar } from '@/components/layout/AppSidebar';
+import AppSidebar from '@/components/layout/AppSidebar';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { auth } from '@/lib/auth';
 
-export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+const DashboardLayout = async ({ children }: { children: React.ReactNode }) => {
 	const session = await auth();
 
 	return (
@@ -21,4 +21,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
 			</main>
 		</SidebarProvider>
 	);
-}
+};
+
+export default DashboardLayout;

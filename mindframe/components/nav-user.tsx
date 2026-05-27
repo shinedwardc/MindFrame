@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/sidebar';
 import { signOutAction } from '@/lib/actions/auth-actions';
 
-export function NavUser({
+const NavUser = ({
 	user,
 }: {
 	user: {
@@ -34,7 +34,7 @@ export function NavUser({
 		email: string;
 		avatar: string;
 	};
-}) {
+}) => {
 	const { isMobile } = useSidebar();
 	return (
 		<SidebarMenu>
@@ -94,4 +94,6 @@ export function NavUser({
 			</SidebarMenuItem>
 		</SidebarMenu>
 	);
-}
+};
+
+export default NavUser;

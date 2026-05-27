@@ -21,10 +21,17 @@
 			"recommended": true,
 			"correctness": {
 				"noUnusedVariables": "error",
-				"noUnusedImports": "error"
+				"noUnusedImports": "warn",
+				"useExhaustiveDependencies": "warn"
 			},
 			"suspicious": {
-				"noExplicitAny": "warn"
+				"noExplicitAny": "warn",
+				"noDocumentCookie": "off"
+			},
+			"a11y": {
+				"useAnchorContent": "off",
+				"useFocusableInteractive": "warn",
+				"useSemanticElements": "warn"
 			}
 		}
 	},

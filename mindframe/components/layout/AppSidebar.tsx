@@ -1,8 +1,8 @@
 'use client';
 
 import { Bird, BookOpenIcon, BrainIcon, Settings2Icon, TrendingUpIcon } from 'lucide-react';
-import { NavMain } from '@/components/nav-main';
-import { NavUser } from '@/components/nav-user';
+import NavMain from '@/components/nav-main';
+import NavUser from '@/components/nav-user';
 import {
 	Sidebar,
 	SidebarContent,
@@ -37,7 +37,7 @@ const data = {
 	],
 };
 
-export function AppSidebar({
+const AppSidebar = ({
 	userName,
 	userEmail,
 	userImage,
@@ -45,7 +45,7 @@ export function AppSidebar({
 	userName?: string;
 	userEmail?: string;
 	userImage?: string;
-}) {
+}) => {
 	const user = {
 		name: userName ?? 'User',
 		email: userEmail ?? '',
@@ -57,7 +57,10 @@ export function AppSidebar({
 			<SidebarHeader>
 				<SidebarMenu>
 					<SidebarMenuItem>
-						<SidebarMenuButton size="lg" render={<a href="/dashboard" />}>
+						<SidebarMenuButton
+							size="lg"
+							render={<a href="/dashboard" aria-label="MindFrame home" />}
+						>
 							<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-brand-500 text-white">
 								<Bird className="size-4" />
 							</div>
@@ -75,4 +78,6 @@ export function AppSidebar({
 			<SidebarRail />
 		</Sidebar>
 	);
-}
+};
+
+export default AppSidebar;

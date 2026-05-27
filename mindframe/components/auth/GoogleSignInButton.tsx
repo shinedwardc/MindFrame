@@ -4,7 +4,7 @@ import { signInWithGoogle } from '@/lib/actions/auth-actions';
 
 const roboto = Roboto({ subsets: ['latin'], weight: '500' });
 
-function GoogleIcon() {
+const GoogleIcon = () => {
 	return (
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
@@ -31,9 +31,9 @@ function GoogleIcon() {
 			/>
 		</svg>
 	);
-}
+};
 
-export default function GoogleSignInButton() {
+const GoogleSignInButton = () => {
 	return (
 		<form action={signInWithGoogle}>
 			<Button
@@ -47,4 +47,6 @@ export default function GoogleSignInButton() {
 			</Button>
 		</form>
 	);
-}
+};
+
+export default GoogleSignInButton;

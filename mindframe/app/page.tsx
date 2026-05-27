@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton';
 import { auth } from '@/lib/auth';
 
-export default async function HomePage() {
+const HomePage = async () => {
 	const session = await auth();
 	if (session) redirect('/dashboard');
 
@@ -15,4 +15,6 @@ export default async function HomePage() {
 			</div>
 		</main>
 	);
-}
+};
+
+export default HomePage;

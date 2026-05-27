@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 	description: 'CBT-powered mood journal',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+const RootLayout = ({ children }: { children: React.ReactNode }) => {
 	return (
 		<html lang="en" className={cn('font-sans', inter.variable)} suppressHydrationWarning>
 			<body suppressHydrationWarning>
@@ -19,4 +19,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 			</body>
 		</html>
 	);
-}
+};
+
+export default RootLayout;
