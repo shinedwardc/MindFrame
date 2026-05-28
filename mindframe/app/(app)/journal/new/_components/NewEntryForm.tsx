@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState, useTransition } from 'react';
+import { Link } from 'next/link';
 import { createJournalEntry } from '../actions';
 
 const moodOptions = [
@@ -94,12 +95,12 @@ const NewEntryForm = ({ prompt, showPrompt }: { prompt: string; showPrompt: bool
 
 			{/* Actions */}
 			<div className="animate-in fade-in duration-300 fill-mode-backwards delay-200 flex items-center justify-between">
-				<a
+				<Link
 					href="/journal"
 					className="text-sm text-muted-foreground transition-colors duration-200 hover:text-foreground"
 				>
 					Discard
-				</a>
+				</Link>
 				<button
 					type="submit"
 					disabled={!canSubmit}

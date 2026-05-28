@@ -1,4 +1,5 @@
 import { apiFetch } from '@/lib/api';
+import Link from 'next/link';
 
 type JournalEntryDistortion = {
 	type: string;
@@ -34,12 +35,12 @@ const RecentEntries = async () => {
 					<p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">
 						Start writing to see your entries, mood patterns, and AI-generated insights here.
 					</p>
-					<a
+					<Link
 						href="/journal/new"
 						className="mt-6 inline-block rounded-md border border-brand-200 px-5 py-2.5 text-sm text-brand-700 transition-colors duration-300 hover:bg-brand-50"
 					>
 						Write your first entry
-					</a>
+					</Link>
 				</div>
 			) : (
 				<>
