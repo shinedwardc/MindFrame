@@ -138,4 +138,13 @@ async def recommend_exercises(mood_score: int, distortions: list[str], context: 
             }
         ],
     )
-    return response.content[0].input
+    tool_block = next(
+        (
+            block for block in response.content
+            if getattr(block, "type", None) == "tool_use" and getattr(block, "name", None) == "recommend_exercises"
+        ),
+        None,
+    )
+    if tool_block is None:
+        raise ValueError("Expected recommend_exercises tool_use block in Claude response")
+    return tool_block.input
