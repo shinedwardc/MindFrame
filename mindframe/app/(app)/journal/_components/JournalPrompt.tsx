@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 const JournalPrompt = ({ prompt }: { prompt: string }) => {
 	return (
-		<section className="animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-backwards delay-150">
+		<section className="animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-backwards delay-150">
 			<span className="text-base tracking-widest text-brand-500">
 				Don't know what to write? Here's a prompt for today to get you started.
 			</span>

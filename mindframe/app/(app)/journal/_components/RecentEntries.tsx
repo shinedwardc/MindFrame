@@ -1,5 +1,5 @@
-import { apiFetch } from '@/lib/api';
 import Link from 'next/link';
+import { apiFetch } from '@/lib/api';
 
 type JournalEntryDistortion = {
 	type: string;
@@ -19,7 +19,7 @@ const RecentEntries = async () => {
 	const entries = await apiFetch<JournalEntry[]>('/journal?limit=10');
 
 	return (
-		<section className="animate-in fade-in slide-in-from-bottom-2 duration-500 fill-mode-backwards delay-300">
+		<section className="animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-backwards delay-300">
 			<div className="mb-6 flex items-center justify-between">
 				<h2 className="font-heading text-xl font-medium text-foreground">Recent Entries</h2>
 				<span className="text-sm text-muted-foreground">

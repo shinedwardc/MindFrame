@@ -1,7 +1,7 @@
 'use client';
 
-import { useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
+import { useRef, useState, useTransition } from 'react';
 import { createJournalEntry } from '../actions';
 
 const moodOptions = [
@@ -81,7 +81,7 @@ const NewEntryForm = ({ prompt, showPrompt }: { prompt: string; showPrompt: bool
 							key={option.score}
 							type="button"
 							onClick={() => setMood(option.score)}
-							className={`rounded-full px-5 py-2 text-sm transition-colors duration-200 ${
+							className={`rounded-full px-5 py-2 text-sm transition-colors duration-300 ${
 								mood === option.score
 									? 'bg-brand-500 text-white'
 									: 'border border-border text-muted-foreground hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700'
@@ -97,7 +97,7 @@ const NewEntryForm = ({ prompt, showPrompt }: { prompt: string; showPrompt: bool
 			<div className="animate-in fade-in duration-300 fill-mode-backwards delay-200 flex items-center justify-between">
 				<Link
 					href="/journal"
-					className="text-sm text-muted-foreground transition-colors duration-200 hover:text-foreground"
+					className="text-sm text-muted-foreground transition-colors duration-300 hover:text-foreground"
 				>
 					Discard
 				</Link>
