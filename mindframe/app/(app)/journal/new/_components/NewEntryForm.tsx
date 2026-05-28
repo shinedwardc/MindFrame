@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, useTransition } from 'react';
-import { Link } from 'next/link';
+import Link from 'next/link';
 import { createJournalEntry } from '../actions';
 
 const moodOptions = [
@@ -25,7 +25,7 @@ const NewEntryForm = ({ prompt, showPrompt }: { prompt: string; showPrompt: bool
 		el.style.height = `${el.scrollHeight}px`;
 	};
 
-	const handleSubmit = (e: React.FormEvent) => {
+	const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		if (!content.trim() || mood === null) return;
 		startTransition(async () => {
