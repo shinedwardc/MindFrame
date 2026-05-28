@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import getDailyPrompt from '@/lib/prompts';
 import NewEntryForm from './_components/NewEntryForm';
 
@@ -14,13 +15,13 @@ const NewJournalEntryPage = async ({ searchParams }: { searchParams: SearchParam
 			<div className="relative overflow-hidden bg-linear-to-b from-brand-50/60 to-background px-8 py-8">
 				<div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,var(--color-brand-100),transparent)]" />
 				<div className="relative mx-auto max-w-3xl animate-in fade-in duration-500 fill-mode-backwards">
-					<a
+					<Link
 						href="/journal"
 						className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors duration-200 hover:text-foreground"
 					>
 						<span>←</span>
 						<span>Back to journal</span>
-					</a>
+					</Link>
 					<p className="mb-4 text-xs font-medium uppercase tracking-widest text-brand-500">
 						New Entry
 					</p>
