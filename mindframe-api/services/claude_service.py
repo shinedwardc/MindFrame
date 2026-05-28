@@ -76,7 +76,16 @@ async def analyze_journal_entry(content: str, mood_score: int) -> dict:
             )
         }],
     )
-    return response.content[0].input
+    tool_block = next(
+        (
+            block for block in response.content
+            if getattr(block, "type", None) == "tool_use" and getattr(block, "name", None) == "analyze_entry"
+        ),
+        None,
+    )
+    if tool_block is None:
+        raise ValueError("Expected analyze_entry tool_use block in Claude response")
+    return tool_block.input
 
 
 async def recommend_exercises(mood_score: int, distortions: list[str], context: str = "") -> dict:
