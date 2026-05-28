@@ -20,7 +20,12 @@ const data = {
 			title: 'Mood Journal',
 			url: '/journal',
 			icon: <BookOpenIcon />,
-			items: [],
+			isActive: true,
+			items: [
+				{ title: 'Overview', url: '/journal' },
+				{ title: 'All Entries', url: '/journal/entries' },
+				{ title: 'New Entry', url: '/journal/new' },
+			],
 		},
 		{
 			title: 'Exercises',

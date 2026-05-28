@@ -67,6 +67,26 @@ Alembic owns all migrations. ORM models live in `mindframe-api/db/models/`. When
 
 `mindframe-api/.env` — `DATABASE_URL`, `OPENAI_API_KEY`, `FRONTEND_URL`, `JWT_SECRET` (must match `NEXTAUTH_SECRET`)
 
+## Code Style (TypeScript / React)
+
+- **Arrow functions only** — never `function` declarations. Use `const Foo = () => {}` for components and `const bar = () => {}` for utilities.
+- **`export default` at the bottom** — define the component/function first, export on the last line. Never `export default function` inline.
+- This applies to all new files in `mindframe/`. Existing files don't need to be retrofitted unless already being edited.
+
+```ts
+// ✅
+const getDailyPrompt = (): string => { ... };
+export default getDailyPrompt;
+
+// ✅
+const JournalPage = () => { ... };
+export default JournalPage;
+
+// ❌
+export default function JournalPage() { ... }
+function getDailyPrompt() { ... }
+```
+
 ## Frontend Design System
 
 MindFrame uses a **"Grounded Warmth"** aesthetic — calm, literary, and deeply personal. The opposite of clinical.
