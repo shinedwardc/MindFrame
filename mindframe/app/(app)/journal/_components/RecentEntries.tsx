@@ -1,11 +1,16 @@
 import { apiFetch } from '@/lib/api';
 
+type JournalEntryDistortion = {
+	type: string;
+	evidence: string;
+};
+
 type JournalEntry = {
 	id: number;
 	content: string;
 	mood_score: number;
 	sentiment: string | null;
-	distortions: string[] | null;
+	distortions: JournalEntryDistortion[] | null;
 	created_at: string;
 };
 
