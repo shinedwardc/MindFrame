@@ -12,12 +12,11 @@ const DashboardLayout = async ({ children }: { children: React.ReactNode }) => {
 				userEmail={session?.user?.email ?? undefined}
 				userImage={session?.user?.image ?? undefined}
 			/>
-			<main className="flex flex-col flex-1 min-h-screen">
-				{/* Toggle button — collapses/expands the sidebar */}
-				<header className="flex items-center h-14 px-4 border-b border-gray-100">
+			<main className="relative flex flex-col flex-1 min-h-screen">
+				<div className="absolute top-3 left-3 z-10">
 					<SidebarTrigger />
-				</header>
-				<div className="flex-1 p-8">{children}</div>
+				</div>
+				<div className="flex-1">{children}</div>
 			</main>
 		</SidebarProvider>
 	);

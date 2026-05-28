@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { DM_Sans, Fraunces } from 'next/font/google';
 import './globals.css';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
+const dmSans = DM_Sans({ subsets: ['latin'], variable: '--font-sans' });
+const fraunces = Fraunces({ subsets: ['latin'], variable: '--font-heading', style: ['normal', 'italic'] });
 
 export const metadata: Metadata = {
 	title: 'MindFrame',
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 
 const RootLayout = ({ children }: { children: React.ReactNode }) => {
 	return (
-		<html lang="en" className={cn('font-sans', inter.variable)} suppressHydrationWarning>
+		<html lang="en" className={cn('font-sans', dmSans.variable, fraunces.variable)} suppressHydrationWarning>
 			<body suppressHydrationWarning>
 				<TooltipProvider>{children}</TooltipProvider>
 			</body>
