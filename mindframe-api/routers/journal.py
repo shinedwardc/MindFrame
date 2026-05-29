@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from models.journal import JournalEntryCreate, JournalEntryResponse
 from db.session import get_db
@@ -28,6 +28,22 @@ async def create_journal_entry(
     db.commit()
     db.refresh(db_entry)
     return db_entry
+
+
+@router.get("/{entry_id}", response_model=JournalEntryResponse)
+def get_journal_entry(
+    entry_id: int,
+    user_id: int = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    entry = (
+        db.query(JournalEntry)
+        .filter(JournalEntry.id == entry_id, JournalEntry.user_id == user_id)
+        .first()
+    )
+    if entry is None:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    return entry
 
 
 @router.get("/", response_model=list[JournalEntryResponse])

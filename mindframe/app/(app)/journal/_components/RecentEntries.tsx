@@ -1,18 +1,21 @@
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
 
-type JournalEntryDistortion = {
-	type: string;
-	evidence: string;
-};
+type Distortion = { type: string; evidence: string };
 
 type JournalEntry = {
 	id: number;
 	content: string;
 	mood_score: number;
 	sentiment: string | null;
-	distortions: JournalEntryDistortion[] | null;
+	distortions: Distortion[] | null;
 	created_at: string;
+};
+
+const moodDotColor = (score: number): string => {
+	if (score <= 4) return 'bg-amber-400';
+	if (score <= 6) return 'bg-muted-foreground/40';
+	return 'bg-brand-500';
 };
 
 const RecentEntries = async () => {
@@ -43,10 +46,13 @@ const RecentEntries = async () => {
 					</Link>
 				</div>
 			) : (
-				<>
-					<ul className="space-y-4">
-						{entries.map((entry) => (
-							<li key={entry.id} className="border-b border-border pb-4 last:border-0">
+				<ul className="space-y-1">
+					{entries.map((entry) => (
+						<li key={entry.id}>
+							<Link
+								href={`/journal/entries/${entry.id}`}
+								className="block border-b border-border py-4 last:border-0 transition-colors duration-300 hover:text-foreground"
+							>
 								<div className="mb-1 flex items-center justify-between">
 									<time className="text-xs text-muted-foreground">
 										{new Date(entry.created_at).toLocaleDateString('en-US', {
@@ -64,10 +70,22 @@ const RecentEntries = async () => {
 								<p className="line-clamp-3 text-sm leading-relaxed text-foreground/80">
 									{entry.content}
 								</p>
-							</li>
-						))}
-					</ul>
-				</>
+								<div className="mt-2 flex items-center gap-3">
+									<span className="flex items-center gap-1.5">
+										<span className={`h-2 w-2 rounded-full ${moodDotColor(entry.mood_score)}`} />
+										<span className="text-xs text-muted-foreground">{entry.mood_score}/10</span>
+									</span>
+									{entry.distortions && entry.distortions.length > 0 && (
+										<span className="text-xs text-muted-foreground">
+											·&nbsp;{entry.distortions.length}{' '}
+											{entry.distortions.length === 1 ? 'pattern' : 'patterns'} noted
+										</span>
+									)}
+								</div>
+							</Link>
+						</li>
+					))}
+				</ul>
 			)}
 		</section>
 	);

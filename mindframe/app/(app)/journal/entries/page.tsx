@@ -1,5 +1,7 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 import EntryList from './_components/EntryList';
+import EntryListSkeleton from './_components/EntryListSkeleton';
 
 const JournalEntriesPage = () => {
 	return (
@@ -9,7 +11,7 @@ const JournalEntriesPage = () => {
 				<div className="relative mx-auto max-w-3xl animate-in fade-in duration-500 fill-mode-backwards">
 					<Link
 						href="/journal"
-						className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors duration-300 hover:text-foreground"
+						className="mb-2 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors duration-300 hover:text-foreground"
 					>
 						<span>←</span>
 						<span>Back to journal</span>
@@ -21,13 +23,15 @@ const JournalEntriesPage = () => {
 						Your journey.
 					</h1>
 					<p className="mt-3 max-w-md text-lg text-muted-foreground">
-						Every entry you've written, in one place.
+						Every entry you&apos;ve written, in one place.
 					</p>
 				</div>
 			</div>
 
 			<div className="mx-auto max-w-3xl px-8 py-8">
-				<EntryList />
+				<Suspense fallback={<EntryListSkeleton />}>
+					<EntryList />
+				</Suspense>
 			</div>
 		</div>
 	);

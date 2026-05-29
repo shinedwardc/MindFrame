@@ -10,13 +10,19 @@ async def analyze_journal_entry(content: str, mood_score: int) -> dict:
     response = await client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=1024,
-        system=(
-            "You are a CBT-trained assistant. Analyze journal entries carefully and conservatively. "
-            "Only flag cognitive distortions when there is clear, specific evidence in the text. "
-            "Do not pathologize normal emotional responses. "
-            "If no distortions are present, return an empty array. "
-            "mood_score: 1-3 = significant distress, 4-6 = mixed/mild, 7-10 = positive."
-        ),
+        system=[
+            {
+                "type": "text",
+                "text": (
+                    "You are a CBT-trained assistant. Analyze journal entries carefully and conservatively. "
+                    "Only flag cognitive distortions when there is clear, specific evidence in the text. "
+                    "Do not pathologize normal emotional responses. "
+                    "If no distortions are present, return an empty array. "
+                    "mood_score: 1-3 = significant distress, 4-6 = mixed/mild, 7-10 = positive."
+                ),
+                "cache_control": {"type": "ephemeral"},
+            }
+        ],
         tools=[{
             "name": "analyze_entry",
             "description": "Return sentiment analysis and cognitive distortions found in the journal entry.",
@@ -65,7 +71,8 @@ async def analyze_journal_entry(content: str, mood_score: int) -> dict:
                     }
                 },
                 "required": ["mood_score", "sentiment", "distortions"]
-            }
+            },
+            "cache_control": {"type": "ephemeral"},
         }],
         tool_choice={"type": "tool", "name": "analyze_entry"},
         messages=[{
@@ -92,13 +99,19 @@ async def recommend_exercises(mood_score: int, distortions: list[str], context: 
     response = await client.messages.create(
         model="claude-haiku-4-5-20251001",
         max_tokens=2048,
-        system=(
-            "You are a CBT therapist assistant. Recommend exactly 3 CBT exercises "
-            "based on the user's mood score (1–10, lower = worse) and detected cognitive distortions. "
-            "exercise_type must be one of: thought_record, behavioral_activation, breathing, grounding. "
-            "Each step should be a single, actionable sentence. Prioritize exercises that directly "
-            "address the identified distortions."
-        ),
+        system=[
+            {
+                "type": "text",
+                "text": (
+                    "You are a CBT therapist assistant. Recommend exactly 3 CBT exercises "
+                    "based on the user's mood score (1–10, lower = worse) and detected cognitive distortions. "
+                    "exercise_type must be one of: thought_record, behavioral_activation, breathing, grounding. "
+                    "Each step should be a single, actionable sentence. Prioritize exercises that directly "
+                    "address the identified distortions."
+                ),
+                "cache_control": {"type": "ephemeral"},
+            }
+        ],
         tools=[{
             "name": "recommend_exercises",
             "description": "Return 3 CBT exercise recommendations based on mood and distortions.",
@@ -129,6 +142,7 @@ async def recommend_exercises(mood_score: int, distortions: list[str], context: 
                 },
                 "required": ["exercises"],
             },
+            "cache_control": {"type": "ephemeral"},
         }],
         tool_choice={"type": "tool", "name": "recommend_exercises"},
         messages=[
