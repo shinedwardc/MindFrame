@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { apiFetch } from '@/lib/api';
 import ExercisesSection from './_components/ExercisesSection';
 import ExercisesSkeleton from './_components/ExercisesSkeleton';
+import DeleteEntryButton from './_components/DeleteEntryButton';
 
 type Distortion = { type: string; evidence: string };
 
@@ -152,6 +153,10 @@ const EntryDetailPage = async ({ params }: { params: Params }) => {
 						distortionTypes={entry.distortions?.map((d) => d.type) ?? []}
 					/>
 				</Suspense>
+
+				<div className="flex justify-center pb-4 pt-10">
+					<DeleteEntryButton entryId={entry.id} />
+				</div>
 			</div>
 		</div>
 	);
