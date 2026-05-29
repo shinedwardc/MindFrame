@@ -4,13 +4,7 @@ import Link from 'next/link';
 import { useRef, useState, useTransition } from 'react';
 import { createJournalEntry } from '../actions';
 
-const moodOptions = [
-	{ label: 'Struggling', score: 2 },
-	{ label: 'Low', score: 4 },
-	{ label: 'Okay', score: 6 },
-	{ label: 'Good', score: 8 },
-	{ label: 'Great', score: 10 },
-];
+const moodOptions = ['Struggling', 'Low', 'Okay', 'Good', 'Great'];
 
 const emotionPalette = [
 	'Anxious',
@@ -34,7 +28,7 @@ const MAX_EMOTIONS = 3;
 
 const NewEntryForm = ({ prompt, showPrompt }: { prompt: string; showPrompt: boolean }) => {
 	const [content, setContent] = useState('');
-	const [mood, setMood] = useState<number | null>(null);
+	const [mood, setMood] = useState<string | null>(null);
 	const [emotions, setEmotions] = useState<string[]>([]);
 	const [isPending, startTransition] = useTransition();
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -105,18 +99,18 @@ const NewEntryForm = ({ prompt, showPrompt }: { prompt: string; showPrompt: bool
 			<div className="animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-backwards delay-150">
 				<p className="mb-4 text-sm font-medium text-foreground">How are you feeling right now?</p>
 				<div className="flex flex-row justify-around">
-					{moodOptions.map((option) => (
+					{moodOptions.map((label) => (
 						<button
-							key={option.score}
+							key={label}
 							type="button"
-							onClick={() => setMood(option.score)}
+							onClick={() => setMood(label)}
 							className={`rounded-full px-5 py-2 text-sm transition-colors duration-300 ${
-								mood === option.score
+								mood === label
 									? 'bg-brand-500 text-white'
 									: 'border border-border text-muted-foreground hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700'
 							}`}
 						>
-							{option.label}
+							{label}
 						</button>
 					))}
 				</div>

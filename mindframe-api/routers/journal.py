@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from models.journal import JournalEntryCreate, JournalEntryResponse
+from models.journal import JournalEntryCreate, JournalEntryResponse, MOOD_LABEL_FALLBACK
 from db.session import get_db
 from db.models.journal import JournalEntry
 from auth import get_current_user_id
@@ -14,13 +14,12 @@ async def create_journal_entry(
     user_id: int = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
-    analysis = await analyze_journal_entry(entry.content, entry.mood_score)
+    analysis = await analyze_journal_entry(entry.content, entry.mood_label)
 
     db_entry = JournalEntry(
         user_id=user_id,
         content=entry.content,
-        # Use mood score from analysis if available, otherwise fall back to user-reported score
-        mood_score=analysis.get("mood_score", entry.mood_score),
+        mood_score=analysis.get("mood_score", MOOD_LABEL_FALLBACK[entry.mood_label]),
         sentiment=analysis.get("sentiment"),
         distortions=analysis.get("distortions", []),
         emotions=entry.emotions,

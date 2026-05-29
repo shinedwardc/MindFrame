@@ -6,7 +6,7 @@ load_dotenv()
 
 client = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
-async def analyze_journal_entry(content: str, mood_score: int) -> dict:
+async def analyze_journal_entry(content: str, mood_label: str) -> dict:
     response = await client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=1024,
@@ -79,7 +79,7 @@ async def analyze_journal_entry(content: str, mood_score: int) -> dict:
             "role": "user",
             "content": (
                 f"Journal entry: {content}\n\n"
-                f"User's self-reported mood score: {mood_score}"
+                f"User's self-reported mood: {mood_label}"
             )
         }],
     )

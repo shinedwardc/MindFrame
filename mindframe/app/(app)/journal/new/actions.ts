@@ -5,12 +5,12 @@ import { apiFetch } from '@/lib/api';
 
 export const createJournalEntry = async (
 	content: string,
-	moodScore: number,
+	moodLabel: string,
 	emotions: string[] = []
 ) => {
 	await apiFetch('/journal', {
 		method: 'POST',
-		body: JSON.stringify({ content, mood_score: moodScore, emotions }),
+		body: JSON.stringify({ content, mood_label: moodLabel, emotions }),
 	});
 	redirect('/journal');
 };
