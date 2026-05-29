@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import journal, exercises
+from routers import dashboard, journal, exercises 
 import os
 from dotenv import load_dotenv
 
@@ -16,6 +16,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
 app.include_router(journal.router, prefix="/journal", tags=["journal"])
 app.include_router(exercises.router, prefix="/exercises", tags=["exercises"])
 

@@ -28,7 +28,7 @@ const moodLabel = (score: number): string => {
 };
 
 const moodTextColor = (score: number): string => {
-	if (score <= 4) return 'text-amber-600';
+	if (score <= 4) return 'text-dusk-500';
 	if (score <= 6) return 'text-muted-foreground';
 	return 'text-brand-500';
 };

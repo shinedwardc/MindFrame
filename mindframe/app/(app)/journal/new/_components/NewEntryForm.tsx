@@ -4,19 +4,42 @@ import Link from 'next/link';
 import { useRef, useState, useTransition } from 'react';
 import { createJournalEntry } from '../actions';
 
-const moodOptions = [
-	{ label: 'Struggling', score: 2 },
-	{ label: 'Low', score: 4 },
-	{ label: 'Okay', score: 6 },
-	{ label: 'Good', score: 8 },
-	{ label: 'Great', score: 10 },
+const moodOptions = ['Struggling', 'Low', 'Okay', 'Good', 'Great'];
+
+const emotionPalette = [
+	'Anxious',
+	'Overwhelmed',
+	'Sad',
+	'Lonely',
+	'Frustrated',
+	'Drained',
+	'Tired',
+	'Restless',
+	'Uncertain',
+	'Calm',
+	'Hopeful',
+	'Content',
+	'Grateful',
+	'Connected',
+	'Proud',
 ];
+
+const MAX_EMOTIONS = 3;
 
 const NewEntryForm = ({ prompt, showPrompt }: { prompt: string; showPrompt: boolean }) => {
 	const [content, setContent] = useState('');
-	const [mood, setMood] = useState<number | null>(null);
+	const [mood, setMood] = useState<string | null>(null);
+	const [emotions, setEmotions] = useState<string[]>([]);
 	const [isPending, startTransition] = useTransition();
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+	const toggleEmotion = (word: string) => {
+		setEmotions((prev) => {
+			if (prev.includes(word)) return prev.filter((w) => w !== word);
+			if (prev.length >= MAX_EMOTIONS) return prev;
+			return [...prev, word];
+		});
+	};
 
 	const handleInput = () => {
 		const el = textareaRef.current;
@@ -29,7 +52,7 @@ const NewEntryForm = ({ prompt, showPrompt }: { prompt: string; showPrompt: bool
 		e.preventDefault();
 		if (!content.trim() || mood === null) return;
 		startTransition(async () => {
-			await createJournalEntry(content, mood);
+			await createJournalEntry(content, mood, emotions);
 		});
 	};
 
@@ -75,26 +98,55 @@ const NewEntryForm = ({ prompt, showPrompt }: { prompt: string; showPrompt: bool
 			{/* Mood selector */}
 			<div className="animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-backwards delay-150">
 				<p className="mb-4 text-sm font-medium text-foreground">How are you feeling right now?</p>
-				<div className="flex flex-wrap gap-2">
-					{moodOptions.map((option) => (
+				<div className="flex flex-row justify-around">
+					{moodOptions.map((label) => (
 						<button
-							key={option.score}
+							key={label}
 							type="button"
-							onClick={() => setMood(option.score)}
+							onClick={() => setMood(label)}
 							className={`rounded-full px-5 py-2 text-sm transition-colors duration-300 ${
-								mood === option.score
+								mood === label
 									? 'bg-brand-500 text-white'
 									: 'border border-border text-muted-foreground hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700'
 							}`}
 						>
-							{option.label}
+							{label}
 						</button>
 					))}
 				</div>
 			</div>
 
+			{/* Emotion words — optional, pairs feeling words with the mood number */}
+			<div className="animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-backwards delay-200">
+				<p className="mb-1 text-sm font-medium text-foreground">
+					Any words for it? <span className="font-normal text-muted-foreground">(optional)</span>
+				</p>
+				<p className="mb-4 text-xs text-muted-foreground">Pick up to three.</p>
+				<div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+					{emotionPalette.map((word) => {
+						const selected = emotions.includes(word);
+						const disabled = !selected && emotions.length >= MAX_EMOTIONS;
+						return (
+							<button
+								key={word}
+								type="button"
+								onClick={() => toggleEmotion(word)}
+								disabled={disabled}
+								className={`rounded-full px-4 py-1.5 text-center text-sm transition-colors duration-300 ${
+									selected
+										? 'bg-brand-500 text-white'
+										: 'border border-border text-muted-foreground hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-border disabled:hover:bg-transparent disabled:hover:text-muted-foreground'
+								}`}
+							>
+								{word}
+							</button>
+						);
+					})}
+				</div>
+			</div>
+
 			{/* Actions */}
-			<div className="animate-in fade-in duration-300 fill-mode-backwards delay-200 flex items-center justify-between">
+			<div className="animate-in fade-in duration-300 fill-mode-backwards delay-300 flex items-center justify-between">
 				<Link
 					href="/journal"
 					className="text-sm text-muted-foreground transition-colors duration-300 hover:text-foreground"
