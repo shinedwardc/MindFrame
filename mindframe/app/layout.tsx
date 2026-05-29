@@ -5,7 +5,11 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 const dmSans = DM_Sans({ subsets: ['latin'], variable: '--font-sans' });
-const fraunces = Fraunces({ subsets: ['latin'], variable: '--font-heading', style: ['normal', 'italic'] });
+const fraunces = Fraunces({
+	subsets: ['latin'],
+	variable: '--font-heading',
+	style: ['normal', 'italic'],
+});
 
 export const metadata: Metadata = {
 	title: 'MindFrame',
@@ -14,7 +18,11 @@ export const metadata: Metadata = {
 
 const RootLayout = ({ children }: { children: React.ReactNode }) => {
 	return (
-		<html lang="en" className={cn('font-sans', dmSans.variable, fraunces.variable)} suppressHydrationWarning>
+		<html
+			lang="en"
+			className={cn('font-sans', dmSans.variable, fraunces.variable)}
+			suppressHydrationWarning
+		>
 			<body suppressHydrationWarning>
 				<TooltipProvider>{children}</TooltipProvider>
 			</body>
