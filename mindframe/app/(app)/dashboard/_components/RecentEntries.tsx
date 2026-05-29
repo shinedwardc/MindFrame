@@ -12,7 +12,8 @@ interface Props {
 }
 
 const moodDotColor = (score: number): string => {
-	if (score <= 4) return 'bg-amber-400';
+	// low = dusk (cloud's "heavy" family), mid = muted, high = sage — no amber
+	if (score <= 4) return 'bg-dusk-500';
 	if (score <= 6) return 'bg-muted-foreground/40';
 	return 'bg-brand-500';
 };

@@ -20,9 +20,10 @@ async def create_journal_entry(
         user_id=user_id,
         content=entry.content,
         # Use mood score from analysis if available, otherwise fall back to user-reported score
-        mood_score=analysis.get("mood_score", entry.mood_score), 
+        mood_score=analysis.get("mood_score", entry.mood_score),
         sentiment=analysis.get("sentiment"),
         distortions=analysis.get("distortions", []),
+        emotions=entry.emotions,
     )
     db.add(db_entry)
     db.commit()

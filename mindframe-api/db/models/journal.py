@@ -12,6 +12,7 @@ class JournalEntry(Base):
     mood_score = Column(Integer, nullable=False)
     sentiment = Column(String)
     distortions = Column(JSON)
+    emotions = Column(JSON)  # list[str] of user-tagged feeling words
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="journal_entries")

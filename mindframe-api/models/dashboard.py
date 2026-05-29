@@ -22,6 +22,11 @@ class MoodPoint(BaseModel):
     avg_mood: float
 
 
+class EmotionCount(BaseModel):
+    word: str
+    count: int
+
+
 class SuggestedExercise(BaseModel):
     title: str
     description: str
@@ -34,5 +39,6 @@ class DashboardSummary(BaseModel):
     streak_days: int
     entries_this_week: int
     mood_trend: list[MoodPoint]  # last 7 days that have entries
+    emotions_summary: list[EmotionCount]  # most-tagged feelings, last 7 days
     top_distortions: list[str]   # top 3 from last 7 entries
     suggested_exercise: SuggestedExercise

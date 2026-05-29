@@ -3,7 +3,7 @@ from collections import Counter
 from sqlalchemy import func, cast, Date
 from sqlalchemy.orm import Session
 from db.models.journal import JournalEntry
-from models.dashboard import TodayEntry, RecentEntry, MoodPoint, SuggestedExercise
+from models.dashboard import TodayEntry, RecentEntry, MoodPoint, EmotionCount, SuggestedExercise
 
 CONTENT_PREVIEW_LENGTH = 120
 
@@ -142,6 +142,25 @@ def get_top_distortions(user_id: int, db: Session, top_n: int = 3) -> list[str]:
                 if isinstance(d, dict) and "type" in d
             )
     return [d for d, _ in counter.most_common(top_n)]
+
+
+def get_emotion_summary(
+    user_id: int, db: Session, days: int = 7, top_n: int = 6
+) -> list[EmotionCount]:
+    rows = (
+        db.query(JournalEntry.emotions)
+        .filter(
+            JournalEntry.user_id == user_id,
+            JournalEntry.emotions.isnot(None),
+            cast(JournalEntry.created_at, Date) > date.today() - timedelta(days=days),
+        )
+        .all()
+    )
+    counter: Counter = Counter()
+    for (emotions,) in rows:
+        if isinstance(emotions, list):
+            counter.update(e for e in emotions if isinstance(e, str))
+    return [EmotionCount(word=w, count=c) for w, c in counter.most_common(top_n)]
 
 
 def get_suggested_exercise(recent_mood_avg: float | None) -> SuggestedExercise:

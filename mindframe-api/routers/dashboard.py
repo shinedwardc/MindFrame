@@ -24,6 +24,7 @@ def get_dashboard_summary(
         streak_days=svc.get_streak(user_id, db),
         entries_this_week=svc.get_entries_this_week(user_id, db),
         mood_trend=trend,
+        emotions_summary=svc.get_emotion_summary(user_id, db),
         top_distortions=svc.get_top_distortions(user_id, db),
         suggested_exercise=svc.get_suggested_exercise(recent_mood_avg),
     )

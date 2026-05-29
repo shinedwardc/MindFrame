@@ -5,13 +5,27 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
+  /* core palette */
   --color-surface: #F5F3F0;
   --color-brand-50: #f2f7f4;
   --color-brand-100: #ddeae3;
   --color-brand-200: #bbcfc5;
   --color-brand-500: #5a8a6c;
+
+  /* deeper sage/emerald — third shade for the "light" emotion family */
   --color-brand-700: #3a6b50;
+  --color-brand-600: #047857; 
   --color-brand-900: #1e3d2c;
+
+  /* dusty blue — low mood / "heavy" emotions (calm, never alarming; no red/yellow) */
+  --color-dusk-400: #5b6a8a;
+  --color-dusk-500: #4f6d8c;
+  --color-dusk-600: #3d5a78;
+
+  /* warm stone — mid / "steady" emotions (Tired, Restless, Uncertain, Calm) */
+  --color-stone-400: #a8a29e;
+  --color-stone-500: #78716c;
+  --color-stone-600: #57534e;
 
   --font-sans: 'DM Sans', sans-serif;
   --font-heading: 'Fraunces', serif;

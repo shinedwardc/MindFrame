@@ -1,6 +1,6 @@
 import { apiFetch } from '@/lib/api';
 import { auth } from '@/lib/auth';
-import MoodTrend from './_components/MoodTrend';
+import EmotionTrend from './_components/EmotionTrend';
 import RecentEntries from './_components/RecentEntries';
 import StatsBar from './_components/StatsBar';
 import SuggestedExercise from './_components/SuggestedExercise';
@@ -23,6 +23,7 @@ interface DashboardSummary {
 	streak_days: number;
 	entries_this_week: number;
 	mood_trend: { date: string; avg_mood: number }[];
+	emotions_summary: { word: string; count: number }[];
 	top_distortions: string[];
 	suggested_exercise: {
 		title: string;
@@ -68,7 +69,7 @@ const DashboardPage = async () => {
 				</div>
 
 				<div className="animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-backwards delay-200">
-					<MoodTrend trend={summary.mood_trend} />
+					<EmotionTrend emotions={summary.emotions_summary} trend={summary.mood_trend} />
 				</div>
 
 				<div className="grid grid-cols-1 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-backwards delay-300 sm:grid-cols-5">

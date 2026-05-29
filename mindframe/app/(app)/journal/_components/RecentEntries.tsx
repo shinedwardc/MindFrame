@@ -13,7 +13,7 @@ type JournalEntry = {
 };
 
 const moodDotColor = (score: number): string => {
-	if (score <= 4) return 'bg-amber-400';
+	if (score <= 4) return 'bg-dusk-500';
 	if (score <= 6) return 'bg-muted-foreground/40';
 	return 'bg-brand-500';
 };
