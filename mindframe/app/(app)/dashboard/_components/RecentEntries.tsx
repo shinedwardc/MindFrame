@@ -1,22 +1,11 @@
+import { TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
-
-interface Entry {
-	id: number;
-	mood_score: number;
-	content_preview: string;
-	created_at: string;
-}
+import { moodBgColor } from '@/lib/mood';
+import type { DashboardEntry } from '@/lib/types';
 
 interface Props {
-	entries: Entry[];
+	entries: DashboardEntry[];
 }
-
-const moodDotColor = (score: number): string => {
-	// low = dusk (cloud's "heavy" family), mid = muted, high = sage — no amber
-	if (score <= 4) return 'bg-dusk-500';
-	if (score <= 6) return 'bg-muted-foreground/40';
-	return 'bg-brand-500';
-};
 
 const formatDate = (dateStr: string) => {
 	const d = new Date(dateStr);
@@ -53,16 +42,32 @@ const RecentEntries = ({ entries }: Props) => {
 					<li key={entry.id}>
 						<Link
 							href={`/journal/entries/${entry.id}`}
-							className="block rounded-lg px-3 py-3 transition-colors duration-300 hover:bg-brand-50/40"
+							className={`group block rounded-lg px-3 py-3 transition-colors duration-300 ${
+								entry.acute_risk_detected ? 'hover:bg-dusk-500/5' : 'hover:bg-brand-50/40'
+							}`}
 						>
 							<div className="mb-1 flex items-center gap-2.5">
-								<span className="flex items-center gap-1.5">
-									<span className={`h-2 w-2 rounded-full ${moodDotColor(entry.mood_score)}`} />
-									<span className="text-xs text-muted-foreground">{entry.mood_score}/10</span>
-								</span>
-								<span className="text-xs text-muted-foreground">
-									·&nbsp;{formatDate(entry.created_at)}
-								</span>
+								{entry.acute_risk_detected ? (
+									<>
+										<span className="flex items-center gap-1.5">
+											<TriangleAlert className="h-3 w-3 text-dusk-500" />
+											<span className="text-xs text-dusk-500">It's okay to ask for help</span>
+										</span>
+										<span className="text-xs text-muted-foreground">
+											·&nbsp;{formatDate(entry.created_at)}
+										</span>
+									</>
+								) : (
+									<>
+										<span className="flex items-center gap-1.5">
+											<span className={`h-2 w-2 rounded-full ${moodBgColor(entry.mood_score)}`} />
+											<span className="text-xs text-muted-foreground">{entry.mood_score}/10</span>
+										</span>
+										<span className="text-xs text-muted-foreground">
+											·&nbsp;{formatDate(entry.created_at)}
+										</span>
+									</>
+								)}
 							</div>
 							<p className="line-clamp-2 text-sm leading-relaxed text-foreground/80">
 								{entry.content_preview}

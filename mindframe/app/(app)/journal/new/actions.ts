@@ -8,9 +8,9 @@ export const createJournalEntry = async (
 	moodLabel: string,
 	emotions: string[] = []
 ) => {
-	await apiFetch('/journal', {
+	const entry = await apiFetch<{ id: number }>('/journal', {
 		method: 'POST',
 		body: JSON.stringify({ content, mood_label: moodLabel, emotions }),
 	});
-	redirect('/journal');
+	redirect(`/journal/entries/${entry.id}`);
 };

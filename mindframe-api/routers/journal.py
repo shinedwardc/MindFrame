@@ -1,32 +1,69 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from models.journal import JournalEntryCreate, JournalEntryResponse, MOOD_LABEL_FALLBACK
-from db.session import get_db
+from db.session import get_db, SessionLocal
 from db.models.journal import JournalEntry
 from auth import get_current_user_id
-from services.claude_service import analyze_journal_entry
+from services.claude_service import analyze_journal_entry, recommend_exercises
 
 router = APIRouter()
+
+
+async def _run_analysis(entry_id: int, content: str, mood_label: str) -> None:
+    db = SessionLocal()
+    try:
+        analysis = await analyze_journal_entry(content, mood_label)
+        mood_score = analysis.get("mood_score", MOOD_LABEL_FALLBACK[mood_label])
+        distortions = analysis.get("distortions", [])
+        positive_patterns = analysis.get("positive_patterns", [])
+        acute_risk_detected = analysis.get("acute_risk_detected", False)
+        distortion_types = [d.get("type", "").replace("_", " ") for d in distortions if isinstance(d, dict)]
+        positive_pattern_types = [p.get("type", "").replace("_", " ") for p in positive_patterns if isinstance(p, dict)]
+
+        exercises_result = await recommend_exercises(
+            mood_score, distortion_types, positive_pattern_types, content
+        )
+        exercises = exercises_result.get("exercises", [])
+
+        db.query(JournalEntry).filter(JournalEntry.id == entry_id).update({
+            "mood_score": mood_score,
+            "sentiment": analysis.get("sentiment"),
+            "distortions": distortions,
+            "positive_patterns": positive_patterns,
+            "acute_risk_detected": acute_risk_detected,
+            "recommended_exercises": exercises,
+            "analysis_status": "complete",
+        })
+        db.commit()
+    except Exception:
+        db.query(JournalEntry).filter(JournalEntry.id == entry_id).update({
+            "analysis_status": "failed",
+        })
+        db.commit()
+    finally:
+        db.close()
+
 
 @router.post("/", response_model=JournalEntryResponse)
 async def create_journal_entry(
     entry: JournalEntryCreate,
+    background_tasks: BackgroundTasks,
     user_id: int = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
-    analysis = await analyze_journal_entry(entry.content, entry.mood_label)
-
     db_entry = JournalEntry(
         user_id=user_id,
         content=entry.content,
-        mood_score=analysis.get("mood_score", MOOD_LABEL_FALLBACK[entry.mood_label]),
-        sentiment=analysis.get("sentiment"),
-        distortions=analysis.get("distortions", []),
+        mood_score=MOOD_LABEL_FALLBACK[entry.mood_label],
         emotions=entry.emotions,
+        analysis_status="pending",
     )
     db.add(db_entry)
     db.commit()
     db.refresh(db_entry)
+
+    background_tasks.add_task(_run_analysis, db_entry.id, entry.content, entry.mood_label)
+
     return db_entry
 
 @router.get("/", response_model=list[JournalEntryResponse])
@@ -60,7 +97,7 @@ def get_journal_entry(
     return entry
 
 
-@router.delete("/", status_code=204)
+@router.delete("/")
 def delete_all_journal_entries(
     confirm: bool = Query(default=False),
     user_id: int = Depends(get_current_user_id),
@@ -68,11 +105,12 @@ def delete_all_journal_entries(
 ):
     if not confirm:
         raise HTTPException(status_code=422, detail="Pass confirm=true to delete all entries.")
-    db.query(JournalEntry).filter(JournalEntry.user_id == user_id).delete()
+    deleted = db.query(JournalEntry).filter(JournalEntry.user_id == user_id).delete()
     db.commit()
+    return {"deleted": deleted}
 
 
-@router.delete("/{entry_id}", status_code=204)
+@router.delete("/{entry_id}")
 def delete_journal_entry(
     entry_id: int,
     user_id: int = Depends(get_current_user_id),
@@ -87,3 +125,4 @@ def delete_journal_entry(
         raise HTTPException(status_code=404, detail="Entry not found")
     db.delete(entry)
     db.commit()
+    return {"deleted": entry_id}

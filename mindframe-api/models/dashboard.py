@@ -14,6 +14,7 @@ class RecentEntry(BaseModel):
     id: int
     mood_score: int
     content_preview: str
+    acute_risk_detected: bool
     created_at: datetime
 
 
@@ -30,7 +31,8 @@ class EmotionCount(BaseModel):
 class SuggestedExercise(BaseModel):
     title: str
     description: str
-    technique: str
+    steps: list[str]
+    exercise_type: str
 
 
 class DashboardSummary(BaseModel):
@@ -40,5 +42,6 @@ class DashboardSummary(BaseModel):
     entries_this_week: int
     mood_trend: list[MoodPoint]  # last 7 days that have entries
     emotions_summary: list[EmotionCount]  # most-tagged feelings, last 7 days
-    top_distortions: list[str]   # top 3 from last 7 entries
+    top_distortions: list[str]         # top 3 from last 7 entries
+    top_positive_patterns: list[str]   # top 3 from last 7 entries
     suggested_exercise: SuggestedExercise

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { moodLabel, moodTextColor } from '@/lib/mood';
 
 interface Props {
 	entry: {
@@ -8,21 +9,6 @@ interface Props {
 		created_at: string;
 	} | null;
 }
-
-const moodLabel = (score: number): string => {
-	if (score <= 3) return 'Struggling';
-	if (score <= 5) return 'Low';
-	if (score <= 6) return 'Okay';
-	if (score <= 8) return 'Good';
-	return 'Great';
-};
-
-const moodTextColor = (score: number): string => {
-	// low = dusk (cloud's "heavy" family), mid = muted, high = sage — no amber
-	if (score <= 4) return 'text-dusk-500';
-	if (score <= 6) return 'text-muted-foreground';
-	return 'text-brand-500';
-};
 
 const TodayCheckin = ({ entry }: Props) => {
 	if (!entry) {

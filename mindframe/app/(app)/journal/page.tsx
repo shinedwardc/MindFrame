@@ -32,7 +32,7 @@ const JournalPage = () => {
 				</div>
 			</div>
 
-			<div className="mx-auto max-w-3xl space-y-6 px-8 py-8">
+			<div className="mx-auto max-w-3xl space-y-6 px-6 py-4">
 				<JournalPrompt prompt={todayPrompt} />
 				<hr className="border-border" />
 				<Suspense fallback={<RecentEntriesSkeleton />}>

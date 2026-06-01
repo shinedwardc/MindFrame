@@ -28,12 +28,17 @@ const NewJournalEntryPage = async ({ searchParams }: { searchParams: SearchParam
 					<h1 className="font-heading text-5xl font-light tracking-tight text-foreground">
 						What's on your mind?
 					</h1>
-					<p className="mt-3 max-w-md text-lg text-muted-foreground">
+					<p className="mt-3 text-lg text-muted-foreground">
 						{new Date().toLocaleDateString('en-US', {
 							weekday: 'long',
 							month: 'long',
 							day: 'numeric',
 						})}
+					</p>
+					<p className="mt-2 font-heading text-base font-light leading-relaxed text-foreground/50">
+						What happened that's still sitting with you? Feel free to write about your day, your
+						feelings, or anything else you'd like to explore. No judgement here — just a safe space
+						for your thoughts.
 					</p>
 				</div>
 			</div>

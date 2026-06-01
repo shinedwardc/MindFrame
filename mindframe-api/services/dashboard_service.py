@@ -7,23 +7,16 @@ from models.dashboard import TodayEntry, RecentEntry, MoodPoint, EmotionCount, S
 
 CONTENT_PREVIEW_LENGTH = 120
 
-_EXERCISES: dict[str, SuggestedExercise] = {
-    "low": SuggestedExercise(
-        title="Box Breathing",
-        description="A grounding technique to calm your nervous system when feeling overwhelmed or anxious.",
-        technique="Inhale for 4 counts, hold for 4, exhale for 4, hold for 4. Repeat 4–6 cycles.",
-    ),
-    "medium": SuggestedExercise(
-        title="Thought Record",
-        description="Examine a stressful thought by weighing the evidence — a core CBT technique for breaking distorted thinking.",
-        technique="Write the automatic thought, rate belief (0–100%), list evidence for and against it, then write a balanced alternative.",
-    ),
-    "high": SuggestedExercise(
-        title="Gratitude Reflection",
-        description="Anchor what's going well to reinforce positive thinking patterns.",
-        technique="Write 3 specific things you're grateful for today and one sentence on why each matters to you.",
-    ),
-}
+_FALLBACK_EXERCISE = SuggestedExercise(
+    title="Mindful Check-In",
+    description="A brief grounding practice to reconnect with how you're feeling right now.",
+    steps=[
+        "Find a comfortable position and take three slow breaths.",
+        "Notice what emotions are present without judging them.",
+        "Write one sentence describing what you're feeling and one describing what you need.",
+    ],
+    exercise_type="mindfulness",
+)
 
 
 def _preview(content: str) -> str:
@@ -64,6 +57,7 @@ def get_recent_entries(user_id: int, db: Session, limit: int = 3) -> list[Recent
             id=e.id,
             mood_score=e.mood_score,
             content_preview=_preview(e.content),
+            acute_risk_detected=bool(e.acute_risk_detected),
             created_at=e.created_at,
         )
         for e in entries
@@ -144,6 +138,28 @@ def get_top_distortions(user_id: int, db: Session, top_n: int = 3) -> list[str]:
     return [d for d, _ in counter.most_common(top_n)]
 
 
+def get_top_positive_patterns(user_id: int, db: Session, top_n: int = 3) -> list[str]:
+    entries = (
+        db.query(JournalEntry.positive_patterns)
+        .filter(
+            JournalEntry.user_id == user_id,
+            JournalEntry.positive_patterns.isnot(None),
+        )
+        .order_by(JournalEntry.created_at.desc())
+        .limit(7)
+        .all()
+    )
+    counter: Counter = Counter()
+    for (positive_patterns,) in entries:
+        if isinstance(positive_patterns, list):
+            counter.update(
+                p["type"]
+                for p in positive_patterns
+                if isinstance(p, dict) and "type" in p
+            )
+    return [p for p, _ in counter.most_common(top_n)]
+
+
 def get_emotion_summary(
     user_id: int, db: Session, days: int = 7, top_n: int = 6
 ) -> list[EmotionCount]:
@@ -163,9 +179,23 @@ def get_emotion_summary(
     return [EmotionCount(word=w, count=c) for w, c in counter.most_common(top_n)]
 
 
-def get_suggested_exercise(recent_mood_avg: float | None) -> SuggestedExercise:
-    if recent_mood_avg is None or recent_mood_avg <= 4:
-        return _EXERCISES["low"]
-    if recent_mood_avg <= 7:
-        return _EXERCISES["medium"]
-    return _EXERCISES["high"]
+def get_suggested_exercise(user_id: int, db: Session) -> SuggestedExercise:
+    entry = (
+        db.query(JournalEntry)
+        .filter(
+            JournalEntry.user_id == user_id,
+            JournalEntry.analysis_status == "complete",
+            JournalEntry.recommended_exercises.isnot(None),
+        )
+        .order_by(JournalEntry.created_at.desc())
+        .first()
+    )
+    if not entry or not isinstance(entry.recommended_exercises, list) or not entry.recommended_exercises:
+        return _FALLBACK_EXERCISE
+    ex = entry.recommended_exercises[0]
+    return SuggestedExercise(
+        title=ex.get("title", ""),
+        description=ex.get("description", ""),
+        steps=ex.get("steps", []),
+        exercise_type=ex.get("exercise_type", ""),
+    )

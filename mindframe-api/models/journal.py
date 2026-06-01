@@ -3,9 +3,11 @@ from datetime import datetime
 from typing import Optional
 
 
-class Distortion(BaseModel):
+class PatternItem(BaseModel):
     type: str
-    evidence: str
+    quote: str
+    reasoning: str
+    confidence: str
 
 
 MOOD_LABEL_FALLBACK = {
@@ -23,13 +25,24 @@ class JournalEntryCreate(BaseModel):
     emotions: list[str] = Field(default_factory=list, max_length=3)
 
 
+class Exercise(BaseModel):
+    title: str
+    description: str
+    steps: list[str]
+    exercise_type: str
+
+
 class JournalEntryResponse(BaseModel):
     id: int
     content: str
     mood_score: int
     sentiment: Optional[str] = None
-    distortions: Optional[list[Distortion]] = None
+    distortions: Optional[list[PatternItem]] = None
+    positive_patterns: Optional[list[PatternItem]] = None
+    acute_risk_detected: bool = False
     emotions: Optional[list[str]] = None
+    recommended_exercises: Optional[list[Exercise]] = None
+    analysis_status: str = 'pending'
     created_at: datetime
 
     model_config = {"from_attributes": True}

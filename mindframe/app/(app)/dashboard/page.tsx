@@ -1,11 +1,12 @@
 import { apiFetch } from '@/lib/api';
 import { auth } from '@/lib/auth';
+import type { DashboardEntry } from '@/lib/types';
 import EmotionTrend from './_components/EmotionTrend';
 import RecentEntries from './_components/RecentEntries';
 import StatsBar from './_components/StatsBar';
 import SuggestedExercise from './_components/SuggestedExercise';
 import TodayCheckin from './_components/TodayCheckin';
-import TopDistortions from './_components/TopDistortions';
+import { TopDistortions, TopPositivePatterns } from './_components/TopPatterns';
 
 interface DashboardSummary {
 	today_entry: {
@@ -14,21 +15,18 @@ interface DashboardSummary {
 		content_preview: string;
 		created_at: string;
 	} | null;
-	recent_entries: {
-		id: number;
-		mood_score: number;
-		content_preview: string;
-		created_at: string;
-	}[];
+	recent_entries: DashboardEntry[];
 	streak_days: number;
 	entries_this_week: number;
 	mood_trend: { date: string; avg_mood: number }[];
 	emotions_summary: { word: string; count: number }[];
 	top_distortions: string[];
+	top_positive_patterns: string[];
 	suggested_exercise: {
 		title: string;
 		description: string;
-		technique: string;
+		steps: string[];
+		exercise_type: string;
 	};
 }
 
@@ -69,12 +67,17 @@ const DashboardPage = async () => {
 				</div>
 
 				<div className="animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-backwards delay-200">
-					<EmotionTrend emotions={summary.emotions_summary} trend={summary.mood_trend} />
+					<EmotionTrend emotions={summary.emotions_summary} />
 				</div>
 
 				<div className="grid grid-cols-1 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-backwards delay-300 sm:grid-cols-5">
-					<div className="sm:col-span-2">
-						<TopDistortions distortions={summary.top_distortions} />
+					<div className="flex h-full flex-col gap-4 sm:col-span-2">
+						<div className="flex-1 min-h-0 items-center">
+							<TopDistortions distortions={summary.top_distortions} />
+						</div>
+						<div className="flex-1 min-h-0">
+							<TopPositivePatterns positivePatterns={summary.top_positive_patterns} />
+						</div>
 					</div>
 					<div className="sm:col-span-3">
 						<SuggestedExercise exercise={summary.suggested_exercise} />

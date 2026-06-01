@@ -4,7 +4,8 @@ interface Props {
 	exercise: {
 		title: string;
 		description: string;
-		technique: string;
+		steps: string[];
+		exercise_type: string;
 	};
 }
 
@@ -18,9 +19,14 @@ const SuggestedExercise = ({ exercise }: Props) => {
 				<p className="font-heading text-base font-medium text-foreground">{exercise.title}</p>
 				<p className="mt-1 text-sm leading-relaxed text-muted-foreground">{exercise.description}</p>
 			</div>
-			<p className="rounded-md border border-brand-100 bg-background/60 p-3 text-xs leading-relaxed text-muted-foreground">
-				{exercise.technique}
-			</p>
+			<ol className="space-y-1.5 rounded-md border border-brand-100 bg-background/60 p-3">
+				{exercise.steps.map((step, i) => (
+					<li key={step} className="flex gap-2.5 text-xs leading-relaxed text-muted-foreground">
+						<span className="shrink-0 font-medium text-brand-500">{i + 1}.</span>
+						{step}
+					</li>
+				))}
+			</ol>
 			<Link
 				href="/exercises"
 				className="mt-auto text-sm text-brand-700 transition-colors duration-300 hover:text-brand-900"

@@ -26,5 +26,6 @@ def get_dashboard_summary(
         mood_trend=trend,
         emotions_summary=svc.get_emotion_summary(user_id, db),
         top_distortions=svc.get_top_distortions(user_id, db),
-        suggested_exercise=svc.get_suggested_exercise(recent_mood_avg),
+        top_positive_patterns=svc.get_top_positive_patterns(user_id, db),
+        suggested_exercise=svc.get_suggested_exercise(user_id, db),
     )

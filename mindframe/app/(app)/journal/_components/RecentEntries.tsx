@@ -1,22 +1,8 @@
+import { TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
-
-type Distortion = { type: string; evidence: string };
-
-type JournalEntry = {
-	id: number;
-	content: string;
-	mood_score: number;
-	sentiment: string | null;
-	distortions: Distortion[] | null;
-	created_at: string;
-};
-
-const moodDotColor = (score: number): string => {
-	if (score <= 4) return 'bg-dusk-500';
-	if (score <= 6) return 'bg-muted-foreground/40';
-	return 'bg-brand-500';
-};
+import { moodBgColor } from '@/lib/mood';
+import type { JournalEntry } from '@/lib/types';
 
 const RecentEntries = async () => {
 	const entries = await apiFetch<JournalEntry[]>('/journal?limit=10');
@@ -51,7 +37,7 @@ const RecentEntries = async () => {
 						<li key={entry.id}>
 							<Link
 								href={`/journal/entries/${entry.id}`}
-								className="block border-b border-border py-4 last:border-0 transition-colors duration-300 hover:text-foreground"
+								className={`block border-b border-border py-4 px-2 last:border-0 transition-colors duration-300`}
 							>
 								<div className="mb-1 flex items-center justify-between">
 									<time className="text-xs text-muted-foreground">
@@ -61,7 +47,7 @@ const RecentEntries = async () => {
 											year: 'numeric',
 										})}
 									</time>
-									{entry.sentiment && (
+									{!entry.acute_risk_detected && entry.sentiment && (
 										<span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs text-brand-700">
 											{entry.sentiment}
 										</span>
@@ -70,16 +56,30 @@ const RecentEntries = async () => {
 								<p className="line-clamp-3 text-sm leading-relaxed text-foreground/80">
 									{entry.content}
 								</p>
-								<div className="mt-2 flex items-center gap-3">
-									<span className="flex items-center gap-1.5">
-										<span className={`h-2 w-2 rounded-full ${moodDotColor(entry.mood_score)}`} />
-										<span className="text-xs text-muted-foreground">{entry.mood_score}/10</span>
-									</span>
-									{entry.distortions && entry.distortions.length > 0 && (
-										<span className="text-xs text-muted-foreground">
-											·&nbsp;{entry.distortions.length}{' '}
-											{entry.distortions.length === 1 ? 'pattern' : 'patterns'} noted
+								<div className="mt-2 flex items-center gap-2.5">
+									{entry.acute_risk_detected ? (
+										<span className="flex items-center gap-1.5">
+											<TriangleAlert className="h-3 w-3 text-dusk-500" />
+											<span className="text-xs text-dusk-500">It's okay to ask for help</span>
 										</span>
+									) : (
+										<>
+											<span className="flex items-center gap-1.5">
+												<span
+													className={`h-2 w-2 rounded-full ${moodBgColor(entry.mood_score)}`}
+												/>
+												<span className="text-xs text-muted-foreground">{entry.mood_score}/10</span>
+											</span>
+											{(entry.distortions?.length ?? 0) + (entry.positive_patterns?.length ?? 0) >
+												0 && (
+												<span className="ml-auto text-xs text-muted-foreground">
+													{entry.distortions?.length ?? 0}{' '}
+													{(entry.distortions?.length ?? 0) === 1 ? 'distortion' : 'distortions'}
+													{' · '}
+													{entry.positive_patterns?.length ?? 0} positive
+												</span>
+											)}
+										</>
 									)}
 								</div>
 							</Link>

@@ -11,10 +11,8 @@ import { useEffect, useRef, useState } from 'react';
 // backgrounds — the one thing this library can't render.
 import WordCloud from 'react-d3-cloud';
 
-interface EmotionCount {
-	word: string;
-	count: number;
-}
+import { emotionCloudTones, emotionFamily } from '@/lib/emotions';
+import type { EmotionCount } from '@/lib/types';
 
 // Minimal shape of a laid-out word; structurally a supertype of the lib's
 // `Word`, so callbacks typed against it stay assignable to the props.
@@ -23,9 +21,6 @@ type CloudWord = { text: string; value: number };
 interface Props {
 	emotions: EmotionCount[];
 }
-
-const HEAVY = new Set(['Anxious', 'Overwhelmed', 'Sad', 'Lonely', 'Frustrated', 'Drained']);
-const LIGHT = new Set(['Hopeful', 'Content', 'Grateful', 'Connected', 'Proud']);
 
 // Stable per-word hash so each word always gets the same shade across renders.
 const hashWord = (word: string): number => {
@@ -36,25 +31,10 @@ const hashWord = (word: string): number => {
 	return Math.abs(h);
 };
 
-const familyOf = (word: string): 'heavy' | 'light' | 'steady' => {
-	if (HEAVY.has(word)) return 'heavy';
-	if (LIGHT.has(word)) return 'light';
-	return 'steady';
-};
-
-// d3-cloud applies fill via d3-selection's .style(), so CSS var() resolves
-// correctly. All families reference the shared tokens from globals.css:
-//   heavy → dusk (dusty blue: low without alarm, no red/yellow)
-//   light → brand (sage/green)
-//   steady → stone (warm neutral)
-const TONES: Record<'heavy' | 'light' | 'steady', string[]> = {
-	heavy: ['var(--color-dusk-500)', 'var(--color-dusk-600)', 'var(--color-dusk-400)'],
-	light: ['var(--color-brand-500)', 'var(--color-brand-700)', 'var(--color-brand-600)'],
-	steady: ['var(--color-stone-500)', 'var(--color-stone-600)', 'var(--color-stone-400)'],
-};
-
+// d3-cloud applies fill via d3-selection's .style(), so the CSS var() shades
+// from the shared taxonomy resolve correctly.
 const fillFor = (word: string): string => {
-	const palette = TONES[familyOf(word)];
+	const palette = emotionCloudTones[emotionFamily(word)];
 	return palette[hashWord(word) % palette.length];
 };
 
