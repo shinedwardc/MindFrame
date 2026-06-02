@@ -20,7 +20,7 @@ const PatternList = ({ items, tone }: { items: string[]; tone: 'dusk' | 'brand' 
 const TopDistortions = ({ distortions }: { distortions: string[] }) => (
 	<div className="flex h-full flex-col rounded-xl border border-border bg-surface p-5">
 		<p className="mb-3 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-			Distortions this week
+			Thought patterns this week
 		</p>
 		<div className="flex flex-1 items-center">
 			{distortions.length === 0 ? (
@@ -35,7 +35,7 @@ const TopDistortions = ({ distortions }: { distortions: string[] }) => (
 const TopPositivePatterns = ({ positivePatterns }: { positivePatterns: string[] }) => (
 	<div className="flex h-full flex-col rounded-xl border border-border bg-surface p-5">
 		<p className="mb-3 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-			Positive patterns this week
+			Strengths this week
 		</p>
 		<div className="flex flex-1 items-center">
 			{positivePatterns.length === 0 ? (

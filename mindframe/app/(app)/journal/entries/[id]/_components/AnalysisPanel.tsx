@@ -171,7 +171,7 @@ const AnalysisContent = ({ entry }: { entry: Entry }) => (
 					{entry.positive_patterns && entry.positive_patterns.length > 0 && (
 						<div className="space-y-3">
 							<div className="[&_p]:text-xs [&_p]:text-muted-foreground flex flex-row items-center justify-between">
-								<p className="font-medium uppercase tracking-widest">Positive Patterns</p>
+								<p className="font-medium uppercase tracking-widest">Strengths</p>
 								<p className="pr-2">Confidence</p>
 							</div>
 							<ul className="space-y-3">
