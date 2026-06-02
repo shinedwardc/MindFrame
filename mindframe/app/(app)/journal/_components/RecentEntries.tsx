@@ -1,4 +1,4 @@
-import { TriangleAlert } from 'lucide-react';
+﻿import { TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
 import { moodBgColor } from '@/lib/mood';
@@ -74,9 +74,9 @@ const RecentEntries = async () => {
 												0 && (
 												<span className="ml-auto text-xs text-muted-foreground">
 													{entry.distortions?.length ?? 0}{' '}
-													{(entry.distortions?.length ?? 0) === 1 ? 'distortion' : 'distortions'}
+													{(entry.distortions?.length ?? 0) === 1 ? 'thought pattern' : 'thought patterns'}
 													{' · '}
-													{entry.positive_patterns?.length ?? 0} positive
+													{entry.positive_patterns?.length ?? 0} strengths
 												</span>
 											)}
 										</>
