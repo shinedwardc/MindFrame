@@ -27,12 +27,12 @@ const data = {
 				{ title: 'New Entry', url: '/journal/new' },
 			],
 		},
-		/*{
+		{
 			title: 'Exercises',
 			url: '/exercises',
 			icon: <BrainIcon />,
 			items: [],
-		},*/
+		},
 		/*{
 			title: 'Insights',
 			url: '/insights',

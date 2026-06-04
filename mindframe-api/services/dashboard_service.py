@@ -1,3 +1,4 @@
+import random
 from datetime import date, timedelta, datetime, timezone
 from collections import Counter
 from sqlalchemy import func, cast, Date
@@ -6,17 +7,6 @@ from db.models.journal import JournalEntry
 from models.dashboard import TodayEntry, RecentEntry, MoodPoint, EmotionCount, SuggestedExercise
 
 CONTENT_PREVIEW_LENGTH = 120
-
-_FALLBACK_EXERCISE = SuggestedExercise(
-    title="Mindful Check-In",
-    description="A brief grounding practice to reconnect with how you're feeling right now.",
-    steps=[
-        "Find a comfortable position and take three slow breaths.",
-        "Notice what emotions are present without judging them.",
-        "Write one sentence describing what you're feeling and one describing what you need.",
-    ],
-    exercise_type="mindfulness",
-)
 
 
 def _preview(content: str) -> str:
@@ -179,8 +169,8 @@ def get_emotion_summary(
     return [EmotionCount(word=w, count=c) for w, c in counter.most_common(top_n)]
 
 
-def get_suggested_exercise(user_id: int, db: Session) -> SuggestedExercise:
-    entry = (
+def get_suggested_exercise(user_id: int, db: Session) -> SuggestedExercise | None:
+    entries = (
         db.query(JournalEntry)
         .filter(
             JournalEntry.user_id == user_id,
@@ -188,11 +178,19 @@ def get_suggested_exercise(user_id: int, db: Session) -> SuggestedExercise:
             JournalEntry.recommended_exercises.isnot(None),
         )
         .order_by(JournalEntry.created_at.desc())
-        .first()
+        .limit(5)
+        .all()
     )
-    if not entry or not isinstance(entry.recommended_exercises, list) or not entry.recommended_exercises:
-        return _FALLBACK_EXERCISE
-    ex = entry.recommended_exercises[0]
+    pool = [
+        exercise
+        for entry in entries
+        if isinstance(entry.recommended_exercises, list)
+        for exercise in entry.recommended_exercises
+        if isinstance(exercise, dict) and exercise.get("title")
+    ]
+    if not pool:
+        return None
+    ex = random.choice(pool)
     return SuggestedExercise(
         title=ex.get("title", ""),
         description=ex.get("description", ""),

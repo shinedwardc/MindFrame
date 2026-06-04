@@ -44,4 +44,4 @@ class DashboardSummary(BaseModel):
     emotions_summary: list[EmotionCount]  # most-tagged feelings, last 7 days
     top_distortions: list[str]         # top 3 from last 7 entries
     top_positive_patterns: list[str]   # top 3 from last 7 entries
-    suggested_exercise: SuggestedExercise
+    suggested_exercise: Optional[SuggestedExercise] = None
