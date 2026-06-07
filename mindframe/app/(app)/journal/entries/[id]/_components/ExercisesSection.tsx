@@ -1,5 +1,5 @@
-import { formatLabel } from '@/lib/utils';
 import type { Exercise } from '@/lib/types';
+import { formatLabel } from '@/lib/utils';
 
 const ExercisesSection = ({ exercises }: { exercises: Exercise[] }) => {
 	if (exercises.length === 0) return null;

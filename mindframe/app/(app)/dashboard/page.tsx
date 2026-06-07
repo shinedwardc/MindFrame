@@ -27,7 +27,7 @@ interface DashboardSummary {
 		description: string;
 		steps: string[];
 		exercise_type: string;
-	};
+	} | null;
 }
 
 const greeting = (name: string) => {

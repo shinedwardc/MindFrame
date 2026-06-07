@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { moodLabel, moodTextColor } from '@/lib/mood';
-import { formatLabel } from '@/lib/utils';
 import type { JournalEntry } from '@/lib/types';
+import { formatLabel } from '@/lib/utils';
 import ExercisesSection from './ExercisesSection';
 
 const ANALYSIS_PHRASES = [
