@@ -1,11 +1,5 @@
 import Link from 'next/link';
-
-interface Exercise {
-	title: string;
-	description: string;
-	steps: string[];
-	exercise_type: string;
-}
+import type { Exercise } from '@/lib/types';
 
 interface Props {
 	exercise: Exercise | null;
