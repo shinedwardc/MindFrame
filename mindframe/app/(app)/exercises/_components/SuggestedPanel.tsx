@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import { formatLabel } from '@/lib/utils';
 import type { Exercise } from '@/lib/types';
+import { formatLabel } from '@/lib/utils';
 
 const SuggestedPanel = ({ exercise }: { exercise: Exercise | null }) => {
 	if (!exercise) {

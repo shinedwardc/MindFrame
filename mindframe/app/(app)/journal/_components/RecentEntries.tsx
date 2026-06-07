@@ -65,16 +65,16 @@ const RecentEntries = async () => {
 									) : (
 										<>
 											<span className="flex items-center gap-1.5">
-												<span
-													className={`h-2 w-2 rounded-full ${moodBgColor(entry.mood_score)}`}
-												/>
+												<span className={`h-2 w-2 rounded-full ${moodBgColor(entry.mood_score)}`} />
 												<span className="text-xs text-muted-foreground">{entry.mood_score}/10</span>
 											</span>
 											{(entry.distortions?.length ?? 0) + (entry.positive_patterns?.length ?? 0) >
 												0 && (
 												<span className="ml-auto text-xs text-muted-foreground">
 													{entry.distortions?.length ?? 0}{' '}
-													{(entry.distortions?.length ?? 0) === 1 ? 'thought pattern' : 'thought patterns'}
+													{(entry.distortions?.length ?? 0) === 1
+														? 'thought pattern'
+														: 'thought patterns'}
 													{' · '}
 													{entry.positive_patterns?.length ?? 0} strengths
 												</span>

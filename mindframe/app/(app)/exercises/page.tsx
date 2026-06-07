@@ -1,7 +1,7 @@
-import SuggestedPanel from "./_components/SuggestedPanel";
-import ExerciseCard from "./_components/ExerciseCard";
 import { apiFetch } from '@/lib/api';
 import type { Exercise, JournalEntry } from '@/lib/types';
+import ExerciseCard from './_components/ExerciseCard';
+import SuggestedPanel from './_components/SuggestedPanel';
 
 type DashboardSnippet = {
 	suggested_exercise: Exercise | null;
@@ -42,40 +42,43 @@ const ExercisesPage = async () => {
 					<SuggestedPanel exercise={summary.suggested_exercise} />
 				</div>
 
-				{library.length > 0 && (() => {
-					const colLeft: Exercise[] = [];
-					const colRight: Exercise[] = [];
-					let heightLeft = 0;
-					let heightRight = 0;
+				{library.length > 0 &&
+					(() => {
+						const colLeft: Exercise[] = [];
+						const colRight: Exercise[] = [];
+						let heightLeft = 0;
+						let heightRight = 0;
 
-					for (const exercise of library) {
-						if (heightLeft <= heightRight) {
-							colLeft.push(exercise);
-							heightLeft += exercise.steps.length;
-						} else {
-							colRight.push(exercise);
-							heightRight += exercise.steps.length;
+						for (const exercise of library) {
+							if (heightLeft <= heightRight) {
+								colLeft.push(exercise);
+								heightLeft += exercise.steps.length;
+							} else {
+								colRight.push(exercise);
+								heightRight += exercise.steps.length;
+							}
 						}
-					}
 
-					return (
-						<div className="animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-backwards delay-150 space-y-4">
-							<h2 className="font-heading text-xl font-medium text-foreground">From your entries</h2>
-							<div className="flex gap-4">
-								<div className="flex flex-1 flex-col gap-4">
-									{colLeft.map((exercise) => (
-										<ExerciseCard key={exercise.exercise_type} exercise={exercise} />
-									))}
-								</div>
-								<div className="flex flex-1 flex-col gap-4">
-									{colRight.map((exercise) => (
-										<ExerciseCard key={exercise.exercise_type} exercise={exercise} />
-									))}
+						return (
+							<div className="animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-backwards delay-150 space-y-4">
+								<h2 className="font-heading text-xl font-medium text-foreground">
+									From your entries
+								</h2>
+								<div className="flex gap-4">
+									<div className="flex flex-1 flex-col gap-4">
+										{colLeft.map((exercise) => (
+											<ExerciseCard key={exercise.exercise_type} exercise={exercise} />
+										))}
+									</div>
+									<div className="flex flex-1 flex-col gap-4">
+										{colRight.map((exercise) => (
+											<ExerciseCard key={exercise.exercise_type} exercise={exercise} />
+										))}
+									</div>
 								</div>
 							</div>
-						</div>
-					);
-				})()}
+						);
+					})()}
 			</div>
 		</div>
 	);
