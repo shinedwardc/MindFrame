@@ -24,9 +24,9 @@ const ExercisesSection = ({ exercises }: { exercises: Exercise[] }) => {
 							{exercise.description}
 						</p>
 						<ol className="space-y-2">
-							{exercise.steps.map((step) => (
+							{exercise.steps.map((step, i) => (
 								<li key={step} className="flex gap-3 text-sm">
-									<span className="shrink-0 font-medium text-brand-500">1.</span>
+									<span className="shrink-0 font-medium text-brand-500">{i + 1}.</span>
 									<span className="text-foreground/80">{step}</span>
 								</li>
 							))}

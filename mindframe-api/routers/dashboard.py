@@ -21,8 +21,8 @@ def get_dashboard_summary(
     return DashboardSummary(
         today_entry=svc.get_today_entry(user_id, db),
         recent_entries=svc.get_recent_entries(user_id, db),
-        streak_days=svc.get_streak(user_id, db),
-        entries_this_week=svc.get_entries_this_week(user_id, db),
+        last_entry_date=svc.get_last_entry_date(user_id, db),
+        total_entries=svc.get_total_entries(user_id, db),
         mood_trend=trend,
         emotions_summary=svc.get_emotion_summary(user_id, db),
         top_distortions=svc.get_top_distortions(user_id, db),

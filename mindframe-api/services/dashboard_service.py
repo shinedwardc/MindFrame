@@ -54,39 +54,18 @@ def get_recent_entries(user_id: int, db: Session, limit: int = 3) -> list[Recent
     ]
 
 
-def get_streak(user_id: int, db: Session) -> int:
-    rows = (
+def get_last_entry_date(user_id: int, db: Session) -> str | None:
+    result = (
         db.query(cast(JournalEntry.created_at, Date))
         .filter(JournalEntry.user_id == user_id)
-        .distinct()
         .order_by(cast(JournalEntry.created_at, Date).desc())
-        .all()
+        .scalar()
     )
-    if not rows:
-        return 0
-
-    dates: set[date] = {r[0] for r in rows}
-    today = date.today()
-    # Start counting from today; if not journaled yet today, allow yesterday as start
-    check = today if today in dates else today - timedelta(days=1)
-
-    streak = 0
-    while check in dates:
-        streak += 1
-        check -= timedelta(days=1)
-    return streak
+    return str(result) if result else None
 
 
-def get_entries_this_week(user_id: int, db: Session) -> int:
-    week_ago = date.today() - timedelta(days=7)
-    return (
-        db.query(JournalEntry)
-        .filter(
-            JournalEntry.user_id == user_id,
-            cast(JournalEntry.created_at, Date) > week_ago,
-        )
-        .count()
-    )
+def get_total_entries(user_id: int, db: Session) -> int:
+    return db.query(JournalEntry).filter(JournalEntry.user_id == user_id).count()
 
 
 def get_mood_trend(user_id: int, db: Session) -> list[MoodPoint]:

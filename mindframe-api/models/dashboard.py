@@ -38,8 +38,8 @@ class SuggestedExercise(BaseModel):
 class DashboardSummary(BaseModel):
     today_entry: Optional[TodayEntry]
     recent_entries: list[RecentEntry]
-    streak_days: int
-    entries_this_week: int
+    last_entry_date: Optional[str]  # YYYY-MM-DD
+    total_entries: int
     mood_trend: list[MoodPoint]  # last 7 days that have entries
     emotions_summary: list[EmotionCount]  # most-tagged feelings, last 7 days
     top_distortions: list[str]         # top 3 from last 7 entries

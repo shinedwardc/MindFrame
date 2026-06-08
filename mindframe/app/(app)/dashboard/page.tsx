@@ -16,8 +16,8 @@ interface DashboardSummary {
 		created_at: string;
 	} | null;
 	recent_entries: DashboardEntry[];
-	streak_days: number;
-	entries_this_week: number;
+	last_entry_date: string | null;
+	total_entries: number;
 	mood_trend: { date: string; avg_mood: number }[];
 	emotions_summary: { word: string; count: number }[];
 	top_distortions: string[];
@@ -63,7 +63,7 @@ const DashboardPage = async () => {
 				</div>
 
 				<div className="animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-backwards delay-150">
-					<StatsBar streakDays={summary.streak_days} entriesThisWeek={summary.entries_this_week} />
+					<StatsBar lastEntryDate={summary.last_entry_date} totalEntries={summary.total_entries} />
 				</div>
 
 				<div className="animate-in fade-in slide-in-from-bottom-2 duration-300 fill-mode-backwards delay-200">
