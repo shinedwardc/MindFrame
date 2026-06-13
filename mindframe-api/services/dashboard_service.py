@@ -59,7 +59,7 @@ def get_last_entry_date(user_id: int, db: Session) -> str | None:
         db.query(cast(JournalEntry.created_at, Date))
         .filter(JournalEntry.user_id == user_id)
         .order_by(cast(JournalEntry.created_at, Date).desc())
-        .scalar()
+        .limit(1).scalar()
     )
     return str(result) if result else None
 

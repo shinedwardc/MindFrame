@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { apiFetch } from '@/lib/api';
 import { moodBgColor } from '@/lib/mood';
 import type { JournalEntry } from '@/lib/types';
+import { distinctPatternCount } from '@/lib/utils';
 
 type DateGroup = {
 	dateKey: string;
@@ -118,8 +119,8 @@ const EntryList = async () => {
 												(entry.distortions?.length ?? 0) + (entry.positive_patterns?.length ?? 0) >
 													0 && (
 													<span className="ml-auto text-xs text-muted-foreground">
-														{entry.distortions?.length ?? 0}{' '}
-														{(entry.distortions?.length ?? 0) === 1
+														{distinctPatternCount(entry.distortions)}{' '}
+														{distinctPatternCount(entry.distortions) === 1
 															? 'thought pattern'
 															: 'thought patterns'}
 														{' · '}

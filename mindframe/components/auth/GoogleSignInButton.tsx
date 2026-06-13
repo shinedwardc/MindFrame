@@ -33,6 +33,14 @@ const GoogleIcon = () => {
 	);
 };
 
+// Base look: keep the Google button recognizable (white face, their gray border).
+const baseClasses = `${roboto.className} bg-white text-[#1F1F1F] border-[#DADCE0] hover:bg-white hover:cursor-pointer gap-3 px-6`;
+
+// Hover/focus/active feedback — this is ours to theme. Replace the old blue-tinted
+// lift with motion + color that fits "Grounded Warmth" (sage washes, warm shadow).
+const interactionClasses =
+	'transition-all duration-300 hover:-translate-y-0.5 hover:border-brand-100 hover:shadow-lg hover:shadow-brand-100/60 active:translate-y-0 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2';
+
 const GoogleSignInButton = () => {
 	return (
 		<form action={signInWithGoogle}>
@@ -40,7 +48,7 @@ const GoogleSignInButton = () => {
 				type="submit"
 				variant="outline"
 				size="lg"
-				className={`${roboto.className} bg-white text-[#1F1F1F] border-[#DADCE0] hover:-translate-y-0.5 hover:shadow-lg hover:shadow-blue-100 hover:border-blue-200 hover:bg-white hover:cursor-pointer active:translate-y-0 transition-all duration-150 gap-3 px-6`}
+				className={`${baseClasses} ${interactionClasses}`}
 			>
 				<GoogleIcon />
 				Sign in with Google

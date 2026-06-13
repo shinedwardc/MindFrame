@@ -5,6 +5,11 @@ export type PatternItem = {
 	confidence?: string;
 };
 
+export type GroupedPattern = {
+	type: string;
+	items: PatternItem[];
+};
+
 export type Exercise = {
 	title: string;
 	description: string;

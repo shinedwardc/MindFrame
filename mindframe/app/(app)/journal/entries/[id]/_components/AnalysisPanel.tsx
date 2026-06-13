@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { moodLabel, moodTextColor } from '@/lib/mood';
 import type { JournalEntry } from '@/lib/types';
-import { formatLabel } from '@/lib/utils';
+import { formatLabel, groupPatternsByType } from '@/lib/utils';
 import ExercisesSection from './ExercisesSection';
 
 const ANALYSIS_PHRASES = [
@@ -139,29 +139,37 @@ const AnalysisContent = ({ entry }: { entry: Entry }) => (
 								<p className="pr-2">Confidence</p>
 							</div>
 							<ul className="space-y-3">
-								{entry.distortions.map((d) => (
+								{groupPatternsByType(entry.distortions).map((group) => (
 									<li
-										key={d.type}
+										key={group.type}
 										className="rounded-lg border border-dusk-400/25 bg-dusk-500/[0.04] p-4"
 									>
 										<div className="mb-2.5 flex items-start justify-between gap-3">
 											<p className="font-heading text-sm font-medium text-foreground">
-												{formatLabel(d.type)}
+												{formatLabel(group.type)}
 											</p>
-											{d.confidence && (
-												<span className="shrink-0 rounded-full bg-dusk-500/10 px-2 py-0.5 text-xs text-dusk-600">
-													{d.confidence}
-												</span>
-											)}
 										</div>
-										<blockquote className="border-l-2 border-dusk-400/50 pl-3 text-sm italic leading-relaxed text-foreground/70">
-											&ldquo;{d.quote}&rdquo;
-										</blockquote>
-										{d.reasoning && (
-											<p className="mt-2 pl-3 text-xs leading-relaxed text-muted-foreground">
-												{d.reasoning}
-											</p>
-										)}
+										<div className="space-y-3">
+											{group.items.map((d, i) => (
+												<div key={i}>
+													<div className="flex items-start justify-between gap-3">
+														<blockquote className="border-l-2 border-dusk-400/50 pl-3 text-sm italic leading-relaxed text-foreground/70">
+															&ldquo;{d.quote}&rdquo;
+														</blockquote>
+														{d.confidence && (
+															<span className="shrink-0 rounded-full bg-dusk-500/10 px-2 py-0.5 text-xs text-dusk-600">
+																{d.confidence}
+															</span>
+														)}
+													</div>
+													{d.reasoning && (
+														<p className="mt-2 pl-3 text-xs leading-relaxed text-muted-foreground">
+															{d.reasoning}
+														</p>
+													)}
+												</div>
+											))}
+										</div>
 									</li>
 								))}
 							</ul>
@@ -175,9 +183,9 @@ const AnalysisContent = ({ entry }: { entry: Entry }) => (
 								<p className="pr-2">Confidence</p>
 							</div>
 							<ul className="space-y-3">
-								{entry.positive_patterns.map((p) => (
+								{entry.positive_patterns.map((p, i) => (
 									<li
-										key={p.type}
+										key={`${p.type}-${i}`}
 										className="rounded-lg border border-brand-100 bg-brand-50/60 p-4"
 									>
 										<div className="mb-2.5 flex items-start justify-between gap-3">

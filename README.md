@@ -1,24 +1,24 @@
 # MindFrame
 
-A personal journaling app with AI-powered reflection. Write entries, track your mood, and let Claude surface emotional patterns, insights, and tailored mental-wellness exercises based on your entries.
+A personal journaling app with AI-powered reflection. Write free-text entries, track your mood, and let Claude surface emotional patterns, insights, and tailored mental-wellness exercises based on your entries. Over time, the app turns a pile of journal entries into a readable picture of how you think.
 
 ## Features
 
-- **Journaling** — daily prompts and free-form entries with mood tracking
-- **AI analysis** — each entry is analyzed by Claude for themes and emotional patterns
-- **Insights** — visualize recurring patterns across your entries
-- **Exercises** — AI-recommended mental-wellness exercises based on your recent journaling
+- **Journaling** — write how you felt during the day — can't think of anything to write? Get suggested prompts to start brainstorming.
+- **AI analysis** — each entry is classified for cognitive distortions *and* positive strengths in your thoughts, not just sentiment.
+- **Insights** — visualize recurring mood keywords across your entries for the week
+- **Exercises** — AI-recommended mental-wellness exercises to help your mood, based on your recent journaling
 - **Dashboard** — a calm overview of your recent activity
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js 16 (App Router), React 19, Tailwind CSS 4, Auth.js v5 |
-| Backend | FastAPI, SQLAlchemy 2, Alembic, Pydantic 2 |
-| Database | PostgreSQL 16 (Docker) |
+| Frontend | Next.js 16 (App Router), React 19, Tailwind CSS 4 |
+| Backend | Python, FastAPI, SQLAlchemy 2, Alembic, Pydantic 2 |
+| Database | PostgreSQL 16 (Docker), SQLAlchemy (ORM), Alembic (migrations) |
 | AI | Anthropic Claude (Sonnet 4.6 / Haiku 4.5) |
-| Auth | Google OAuth via NextAuth, JWT shared with FastAPI |
+| Auth | Auth.js v5 (NextAuth), Google OAuth |
 
 ## Repository Structure
 
@@ -52,17 +52,26 @@ A personal journaling app with AI-powered reflection. Write entries, track your 
 ```bash
 docker compose up -d
 ```
+This runs PostgreSQL 16 in a container
 
 ### 2. Backend
 
 ```bash
 cd mindframe-api
-python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-alembic upgrade head
-uvicorn main:app --reload        # http://localhost:8000
+ 
+# Install dependencies — uv creates and manages the virtual environment for you
+uv sync
+ 
+# Apply database migrations
+uv run alembic upgrade head
+ 
+# Run the API
+uv run uvicorn app.main:app --reload
 ```
+> Uses [uv](https://docs.astral.sh/uv/) for dependency management. `uv run` executes
+> commands inside the project environment automatically — no manual activate step.
+> (If the project uses `requirements.txt` rather than `pyproject.toml`, swap `uv sync`
+> for `uv venv && uv pip install -r requirements.txt`.)
 
 Create `mindframe-api/.env`:
 
@@ -106,11 +115,11 @@ GOOGLE_CLIENT_SECRET=...
 ## Development
 
 ```bash
-# Frontend (from mindframe/)
-npm run lint         # ESLint
 npm run check        # Biome
 npm run check:fix    # Biome with auto-fix
 npm run build        # Production build
 ```
 
-API docs are available at http://localhost:8000/docs when the backend is running.
+## License
+ 
+Released under the [MIT License](LICENSE).
