@@ -66,7 +66,7 @@ const AppSidebar = ({
 							size="lg"
 							render={<a href="/dashboard" aria-label="MindFrame home" />}
 						>
-							<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-brand-500 text-white">
+							<div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-brand-500 text-primary-foreground">
 								<Bird className="size-4" />
 							</div>
 							<span className="truncate font-semibold">MindFrame</span>

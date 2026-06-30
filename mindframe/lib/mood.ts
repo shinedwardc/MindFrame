@@ -49,9 +49,9 @@ export const moodTextColor = (score: number): string => TONE_TEXT[moodTone(score
 // Selected-button styling for the entry form's five-way mood picker. A richer
 // five-level gradient than the three tones above, but the same tonal direction.
 export const moodSelectedStyle: Record<string, string> = {
-	Struggling: 'bg-dusk-600 text-white border-dusk-600',
-	Low: 'bg-dusk-500 text-white border-dusk-500',
-	Okay: 'bg-muted-foreground/60 text-white border-transparent',
-	Good: 'bg-brand-500/70 text-white border-transparent',
-	Great: 'bg-brand-500 text-white border-transparent',
+	Struggling: 'bg-dusk-600 text-primary-foreground border-dusk-600',
+	Low: 'bg-dusk-500 text-primary-foreground border-dusk-500',
+	Okay: 'bg-muted-foreground/60 text-primary-foreground border-transparent',
+	Good: 'bg-brand-500/70 text-primary-foreground border-transparent',
+	Great: 'bg-brand-500 text-primary-foreground border-transparent',
 };
