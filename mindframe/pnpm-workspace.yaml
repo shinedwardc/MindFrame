@@ -1,0 +1,7 @@
+onlyBuiltDependencies:
+  - sharp
+  - unrs-resolver
+
+overrides:
+  react-d3-cloud>react: $react
+  react-d3-cloud>react-dom: $react-dom
