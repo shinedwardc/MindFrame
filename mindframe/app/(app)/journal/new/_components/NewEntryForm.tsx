@@ -166,7 +166,7 @@ const NewEntryForm = ({ prompt, showPrompt }: { prompt: string; showPrompt: bool
 				<button
 					type="submit"
 					disabled={!canSubmit}
-					className="rounded-md bg-brand-500 px-6 py-2.5 text-sm font-medium text-white transition-colors duration-300 hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-40"
+					className="rounded-md bg-brand-500 px-6 py-2.5 text-sm font-medium text-primary-foreground transition-colors duration-300 hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-40"
 				>
 					{isPending ? 'Saving…' : 'Save entry'}
 				</button>

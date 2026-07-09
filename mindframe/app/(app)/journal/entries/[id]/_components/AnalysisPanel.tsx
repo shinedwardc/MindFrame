@@ -97,7 +97,7 @@ const AnalysisContent = ({ entry }: { entry: Entry }) => (
 					href="https://988lifeline.org"
 					target="_blank"
 					rel="noopener noreferrer"
-					className="inline-flex items-center gap-2 rounded-lg bg-dusk-500 px-4 py-2.5 text-sm font-medium text-white transition-colors duration-200 hover:bg-dusk-600"
+					className="inline-flex items-center gap-2 rounded-lg bg-dusk-500 px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors duration-200 hover:bg-dusk-600"
 				>
 					988 Suicide &amp; Crisis Lifeline — call or text 988
 				</a>

@@ -34,9 +34,9 @@ export const emotionFamily = (word: string): EmotionFamily =>
 
 // Selected-chip background (NewEntryForm). Tailwind utilities → globals.css tokens.
 export const emotionChipClass: Record<EmotionFamily, string> = {
-	heavy: 'bg-dusk-500 text-white',
-	steady: 'bg-stone-500 text-white',
-	light: 'bg-brand-500 text-white',
+	heavy: 'bg-dusk-500 text-primary-foreground',
+	steady: 'bg-stone-500 text-primary-foreground',
+	light: 'bg-brand-500 text-primary-foreground',
 };
 
 // Word-cloud fill shades (EmotionCloud). Raw CSS vars so d3-selection's .style()

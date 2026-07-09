@@ -22,7 +22,7 @@ const TodayCheckin = ({ entry }: Props) => {
 				</div>
 				<Link
 					href="/journal/new"
-					className="shrink-0 rounded-md bg-brand-500 px-5 py-2.5 text-sm font-medium text-white transition-colors duration-300 hover:bg-brand-700"
+					className="shrink-0 rounded-md bg-brand-500 px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors duration-300 hover:bg-brand-700"
 				>
 					+ New Entry
 				</Link>

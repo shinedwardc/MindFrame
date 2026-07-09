@@ -24,7 +24,7 @@ const JournalPage = () => {
 					<div className="mt-6">
 						<a
 							href="/journal/new"
-							className="inline-block rounded-md bg-brand-500 px-5 py-2.5 text-sm font-medium text-white transition-colors duration-300 hover:bg-brand-700"
+							className="inline-block rounded-md bg-brand-500 px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors duration-300 hover:bg-brand-700"
 						>
 							+ New Entry
 						</a>
