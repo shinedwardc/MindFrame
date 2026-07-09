@@ -66,12 +66,10 @@ uv sync
 uv run alembic upgrade head
  
 # Run the API
-uv run uvicorn app.main:app --reload
+uv run uvicorn main:app --reload
 ```
 > Uses [uv](https://docs.astral.sh/uv/) for dependency management. `uv run` executes
 > commands inside the project environment automatically — no manual activate step.
-> (If the project uses `requirements.txt` rather than `pyproject.toml`, swap `uv sync`
-> for `uv venv && uv pip install -r requirements.txt`.)
 
 Create `mindframe-api/.env`:
 
