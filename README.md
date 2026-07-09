@@ -86,8 +86,8 @@ JWT_SECRET=<must match NEXTAUTH_SECRET>
 
 ```bash
 cd mindframe
-npm install
-npm run dev                      # http://localhost:3000
+pnpm install
+pnpm dev                         # http://localhost:3000
 ```
 
 Create `mindframe/.env.local`:
@@ -115,9 +115,9 @@ GOOGLE_CLIENT_SECRET=...
 ## Development
 
 ```bash
-npm run check        # Biome
-npm run check:fix    # Biome with auto-fix
-npm run build        # Production build
+pnpm check        # Biome
+pnpm check:fix    # Biome with auto-fix
+pnpm build        # Production build
 ```
 
 ## License

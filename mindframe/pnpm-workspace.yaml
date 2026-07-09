@@ -1,0 +1,11 @@
+onlyBuiltDependencies:
+  - sharp
+  - unrs-resolver
+
+catalog:
+  react: ^19.0.0
+  react-dom: ^19.0.0
+
+overrides:
+  react-d3-cloud>react: "catalog:"
+  react-d3-cloud>react-dom: "catalog:"
