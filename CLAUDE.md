@@ -26,17 +26,15 @@ npm run lint
 
 ### Backend (mindframe-api/)
 ```bash
-python -m venv .venv
-.venv\Scripts\activate       # Windows
-pip install -r requirements.txt
-uvicorn main:app --reload    # http://localhost:8000
+uv sync                            # installs deps into a managed .venv
+uv run uvicorn main:app --reload   # http://localhost:8000
 ```
 
 ### Database Migrations (run from mindframe-api/)
 ```bash
-alembic revision --autogenerate -m "description"
-alembic upgrade head
-alembic downgrade -1
+uv run alembic revision --autogenerate -m "description"
+uv run alembic upgrade head
+uv run alembic downgrade -1
 ```
 
 ## Architecture
