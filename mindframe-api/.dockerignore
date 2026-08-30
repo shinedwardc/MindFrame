@@ -1,0 +1,17 @@
+# The host virtualenv is Linux-glibc-specific and built against the host's
+# Python; the image builds its own with uv.
+.venv
+__pycache__
+**/__pycache__
+*.pyc
+*.pyo
+
+# Secrets stay out of the build context; compose injects them at runtime.
+.env
+
+.git
+.gitignore
+Dockerfile
+.dockerignore
+*.log
+.DS_Store

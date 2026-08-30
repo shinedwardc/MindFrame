@@ -43,16 +43,42 @@ A personal journaling app with AI-powered reflection. Write free-text entries, t
 
 - Node.js 20+
 - Python 3.11+
-- Docker (for PostgreSQL)
+- Docker (for PostgreSQL, or for the whole stack)
 - A Google OAuth client (for sign-in)
 - An Anthropic API key
+
+### Quickstart — everything in containers
+
+```bash
+docker compose up --build
+```
+Starts Postgres, the FastAPI backend, and the Next.js frontend together, with hot
+reload on both app services. Then apply migrations:
+
+```bash
+docker compose run --rm api alembic upgrade head
+```
+
+Frontend at http://localhost:3000, API at http://localhost:8000, Postgres on host
+port 5433. You still need the two `.env` files described below — compose reads them
+via `env_file:` and overrides only the host-specific values.
+
+To run the production images instead (no hot reload, non-root, standalone build):
+
+```bash
+docker compose -f docker-compose.yml up --build
+```
+
+---
+
+Prefer running the app servers natively? The steps below still work.
 
 ### 1. Start the database
 
 ```bash
-docker compose up -d
+docker compose up -d db
 ```
-This runs PostgreSQL 16 in a container
+This runs PostgreSQL 16 in a container, published on host port 5433.
 
 ### 2. Backend
 
@@ -74,10 +100,10 @@ uv run uvicorn main:app --reload
 Create `mindframe-api/.env`:
 
 ```env
-DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/mindframe
+DATABASE_URL=postgresql+psycopg://mindframe:mindframe@localhost:5433/mindframe
 ANTHROPIC_API_KEY=sk-ant-...
 FRONTEND_URL=http://localhost:3000
-JWT_SECRET=<must match NEXTAUTH_SECRET>
+JWT_SECRET=<must match AUTH_SECRET>
 ```
 
 ### 3. Frontend
@@ -91,11 +117,11 @@ pnpm dev                         # http://localhost:3000
 Create `mindframe/.env.local`:
 
 ```env
-NEXTAUTH_SECRET=<must match JWT_SECRET>
-NEXTAUTH_URL=http://localhost:3000
-NEXT_PUBLIC_API_URL=http://localhost:8000
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
+AUTH_SECRET=<must match JWT_SECRET>
+AUTH_URL=http://localhost:3000
+API_URL=http://localhost:8000
+AUTH_GOOGLE_ID=...
+AUTH_GOOGLE_SECRET=...
 ```
 
 ## Architecture

@@ -23,14 +23,16 @@ Monorepo with two services:
 |---|---|
 | `mindframe/` | Next.js 16 frontend (App Router, Tailwind, Auth.js v5). |
 | `mindframe-api/` | FastAPI backend (SQLAlchemy, Alembic, Anthropic Claude). |
-| `docker-compose.yml` | PostgreSQL 16 only — both app servers run natively, not in containers. |
+| `docker-compose.yml` | Full stack — Postgres 16, FastAPI, Next.js — in production-shaped images. |
+| `docker-compose.override.yml` | Merged automatically by `docker compose up`; swaps in dev servers + bind mounts. |
+| `mindframe/Dockerfile`, `mindframe-api/Dockerfile` | Multi-stage; `dev` and `runner` targets share the same base layers. |
 
 Within those:
 
 | Path | Responsibility |
 |---|---|
 | `mindframe/app/` | App Router — pages and the single NextAuth API route. |
-| `mindframe/lib/api.ts` | The only place that calls FastAPI — attaches the JWT, hits `NEXT_PUBLIC_API_URL`. |
+| `mindframe/lib/api.ts` | The only place that calls FastAPI — attaches the JWT, hits `API_URL`. |
 | `mindframe/proxy.ts` | Edge proxy (Next.js 16's renamed Middleware) — gates every non-public route on a valid session. |
 | `mindframe-api/routers/` | HTTP handlers only — validate input, delegate to services, return Pydantic models. |
 | `mindframe-api/services/claude_service.py` | All GPT/Claude calls isolated here (see §5); uses `AsyncAnthropic`. |
@@ -44,9 +46,26 @@ Import alias: `@/*` maps to the `mindframe/` root (see `mindframe/tsconfig.json`
 
 ## 2. Dev commands
 
-### Start Postgres
+### Everything in containers (recommended)
 ```bash
-docker compose up -d
+docker compose up              # db + api + web, hot reload on both services
+docker compose up --build      # after changing a Dockerfile or a lockfile
+docker compose down            # stop (data survives in the postgres_data volume)
+```
+Source is bind-mounted, so edits reload live — no rebuild needed for code changes.
+Migrations run inside the API container:
+```bash
+docker compose run --rm api alembic upgrade head
+```
+
+Production images (no reload, non-root, standalone build):
+```bash
+docker compose -f docker-compose.yml up --build
+```
+
+### Postgres only, app servers native
+```bash
+docker compose up -d db
 ```
 
 ### Frontend (`mindframe/`)
@@ -81,11 +100,13 @@ Alembic detects it during `--autogenerate`.
 
 **Auth flow** — NextAuth (Auth.js v5) handles login via Google OAuth and issues a **JWT stored
 in a cookie** (no database session). FastAPI verifies that JWT on every request using the
-shared secret (`NEXTAUTH_SECRET` = `JWT_SECRET`). Next.js never writes to the database directly.
+shared secret (`AUTH_SECRET` = `JWT_SECRET`). Next.js never writes to the database directly.
 
 **Next.js → FastAPI communication** — all data fetching goes through `mindframe/lib/api.ts`
 (`apiFetch`), which reads the server-side session, attaches the JWT as a Bearer token, and
-calls FastAPI at `NEXT_PUBLIC_API_URL` (default `http://localhost:8000`). Next.js has no direct
+calls FastAPI at `API_URL` (default `http://localhost:8000`, `http://api:8000` in compose).
+It is deliberately *not* `NEXT_PUBLIC_`-prefixed: only server components and server actions read
+it, and that prefix would inline the value at build time. Next.js has no direct
 database access.
 
 **FastAPI layers** — `routers/` are HTTP handlers only and delegate to services;
@@ -104,11 +125,15 @@ unauthenticated users to `/` before any page renders.
 
 ## 4. Environment variables
 
-`mindframe/.env.local` — `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `NEXT_PUBLIC_API_URL`,
-`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+`mindframe/.env.local` — `AUTH_SECRET`, `AUTH_URL`, `API_URL`,
+`AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` (Auth.js v5 reads the `AUTH_*` names)
+
+Both `.env` files are consumed by compose via `env_file:`, so the same files work
+natively and in containers. Compose overrides `DATABASE_URL` and `API_URL` at runtime,
+since `localhost` inside a container is the container itself.
 
 `mindframe-api/.env` — `DATABASE_URL`, `ANTHROPIC_API_KEY`, `FRONTEND_URL`, `JWT_SECRET`
-(must match `NEXTAUTH_SECRET`)
+(must match `AUTH_SECRET`)
 
 Never commit either file or print `ANTHROPIC_API_KEY` / `JWT_SECRET` in logs — and never log
 journal entry content, per the guiding principle above.

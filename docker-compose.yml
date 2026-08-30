@@ -1,3 +1,8 @@
+# Production-shaped stack. `docker compose up` also merges
+# docker-compose.override.yml, which swaps in dev servers and bind mounts.
+# To run these production images as written:
+#     docker compose -f docker-compose.yml up --build
+
 services:
   db:
     image: postgres:16
@@ -5,29 +10,59 @@ services:
       POSTGRES_USER: mindframe
       POSTGRES_PASSWORD: mindframe
       POSTGRES_DB: mindframe
+    # Host 5433 -> container 5432. Other services reach Postgres as db:5432
+    # over the compose network; this mapping exists only for host tools
+    # (psql, a GUI client) and to avoid colliding with a local Postgres.
     ports:
-      - "5433:5432"
+      - '5433:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U mindframe -d mindframe']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    # Distinct tag per mode: dev and prod must not overwrite each other's image.
+    image: mindframe-api:prod
+    build:
+      context: ./mindframe-api
+      target: runner
+    # Supplies ANTHROPIC_API_KEY and JWT_SECRET; secrets stay in the untracked
+    # .env file rather than moving into this tracked compose file.
+    env_file:
+      - ./mindframe-api/.env
+    environment:
+      # Overrides the .env value: inside a container `localhost` is the
+      # container itself, and the mapped 5433 does not exist on this network.
+      DATABASE_URL: postgresql+psycopg://mindframe:mindframe@db:5432/mindframe
+      # CORS origin is the browser's view of the frontend, not the internal name.
+      FRONTEND_URL: http://localhost:3000
+    ports:
+      - '8000:8000'
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    image: mindframe-web:prod
+    build:
+      context: ./mindframe
+      target: runner
+    env_file:
+      - ./mindframe/.env.local
+    environment:
+      # Server-side only: Next.js reaches FastAPI by service name. The browser
+      # never calls this URL, so it does not need to be host-resolvable.
+      API_URL: http://api:8000
+      # OAuth callbacks are built from the browser's URL, so this stays as the
+      # published host port.
+      AUTH_URL: http://localhost:3000
+    ports:
+      - '3000:3000'
+    depends_on:
+      - api
 
 volumes:
   postgres_data:
-
-# image: postgres:16 — pulls the official Postgres 16 image from Docker Hub and runs it as a container.
-
-# environment — sets the initial database credentials inside the container:
-# - POSTGRES_USER / POSTGRES_PASSWORD → login credentials
-# - POSTGRES_DB → creates this database on first startup
-
-# ports: "5432:5432" — maps container port 5432 to your host port 5432. This is why your app can connect
-# to localhost:5432 — Docker forwards it into the container.
-
-# volumes: postgres_data — persists the database files to a named Docker volume. Without this, all data
-# would be wiped every time the container stops.
-
-# So the connection string in db/session.py:
-# postgresql+psycopg://mindframe:mindframe@localhost:5432/mindframe
-# ...uses exactly the credentials and database name defined in docker-compose.yml. They have to match.
-
-# docker compose up -d starts Postgres in the background. Your FastAPI app then connects to it like any
-# regular local database — it just happens to be running inside a container.
