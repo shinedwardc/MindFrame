@@ -1,0 +1,28 @@
+# Merged automatically by `docker compose up`, turning the stack into a dev
+# environment: source is bind-mounted and both servers watch for changes.
+# Skip it with: docker compose -f docker-compose.yml up
+
+services:
+  api:
+    image: mindframe-api:dev
+    build:
+      target: dev
+    volumes:
+      - ./mindframe-api:/app
+      # Anonymous volume: keeps the image's Linux virtualenv from being hidden
+      # by the host .venv that the bind mount would otherwise mount over it.
+      - /app/.venv
+    command:
+      ['uvicorn', 'main:app', '--host', '0.0.0.0', '--port', '8000', '--reload']
+
+  web:
+    image: mindframe-web:dev
+    build:
+      target: dev
+    volumes:
+      - ./mindframe:/app
+      # Same reasoning as .venv above: node_modules and .next belong to the
+      # container, not the host.
+      - /app/node_modules
+      - /app/.next
+    command: ['pnpm', 'dev']

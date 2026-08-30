@@ -1,0 +1,19 @@
+# Host-built artifacts must never enter the image: node_modules may contain
+# native binaries compiled for the host OS/arch, and .next would shadow the
+# build produced inside the container.
+node_modules
+.next
+next-env.d.ts
+
+# Secrets stay out of the build context; compose injects them at runtime.
+.env
+.env.local
+.env*.local
+
+.git
+.gitignore
+Dockerfile
+.dockerignore
+npm-debug.log*
+*.log
+.DS_Store
