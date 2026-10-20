@@ -124,7 +124,7 @@ Costs are computed from the price table `PRICES_PER_MTOK` in `mindframe-api/serv
 - **Auth** — Auth.js v5 handles Google OAuth and keeps the session in an encrypted token (JWE) in the `authjs.session-token` cookie. FastAPI decrypts that token on every request using the shared secret (`AUTH_SECRET` = `JWT_SECRET`), so there are no database sessions and Next.js never touches the database directly. The backend creates a user row on a signed-in user's first API request.
 - **Data flow** — all frontend data fetching goes through `mindframe/lib/api.ts`, which forwards the session token as a Bearer token and calls FastAPI.
 - **AI calls** — isolated in `mindframe-api/services/llm_service.py` (entry analysis and exercise recommendations), which calls the provider through [LiteLLM](https://docs.litellm.ai/) with structured outputs. Saving an entry returns immediately; analysis runs as a background task and moves the entry from `pending` to `complete` or `failed`.
-- **Cost tracking** — each model call attempt, retries and failures included, writes a row to the `llm_calls` table: task, model, status, input and output tokens, latency and USD cost. No entry text is stored there. For per-task cost and p50/p95 latency over the last 7 days (from the repo root):
+- **Cost tracking** — each model call attempt, retries and failures included, writes a row to the `llm_calls` table: task, model, status, input and output tokens, latency and USD cost. No entry text is stored there. Calls made by an eval run carry an `eval_run_id`; real-user calls leave it empty. For per-task cost and p50/p95 latency of real-user calls over the last 7 days (from the repo root):
 
   ```bash
   docker compose exec -T db psql -U mindframe -d mindframe < mindframe-api/sql/llm_call_stats.sql

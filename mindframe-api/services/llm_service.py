@@ -172,10 +172,12 @@ async def _structured_call(
     check,
     messages: list[dict],
     effort: str,
+    eval_run_id: str | None = None,
 ) -> dict:
     # Structured outputs constrain the reply to `schema`. `check` enforces what the schema
     # can't express there (number ranges, array lengths) and a failed check gets one retry.
-    # Every attempt is recorded in llm_calls, since each one is billed.
+    # Every attempt is recorded in llm_calls, since each one is billed. eval_run_id is set
+    # only by the eval runner, so real-user rows keep it NULL.
     problem = None
     for _ in range(2):
         started = time.perf_counter()
@@ -187,9 +189,12 @@ async def _structured_call(
                 messages=messages,
             )
         except Exception as exc:
-            _record_call(name, model, _elapsed_ms(started), "error", error_type=type(exc).__name__)
+            _record_call(
+                name, model, _elapsed_ms(started), "error",
+                error_type=type(exc).__name__, eval_run_id=eval_run_id,
+            )
             raise
-        call = {"latency_ms": _elapsed_ms(started), **_token_usage(response)}
+        call = {"latency_ms": _elapsed_ms(started), "eval_run_id": eval_run_id, **_token_usage(response)}
         choice = response.choices[0]
         if choice.finish_reason == "content_filter":
             _record_call(name, model, status="refusal", **call)
@@ -235,12 +240,14 @@ def _record_call(
     error_type: str | None = None,
     input_tokens: int = 0,
     output_tokens: int = 0,
+    eval_run_id: str | None = None,
 ) -> None:
     db = SessionLocal()
     try:
         db.add(LLMCall(
             task=task,
             model=model,
+            eval_run_id=eval_run_id,
             status=status,
             error_type=error_type,
             latency_ms=latency_ms,
@@ -304,7 +311,11 @@ ANALYZE_SCHEMA = {
 }
 
 
-async def analyze_journal_entry(content: str, mood_label: str) -> dict:
+async def analyze_journal_entry(
+    content: str,
+    mood_label: str,
+    eval_run_id: str | None = None,
+) -> dict:
     return await _structured_call(
         ANALYZE_MODEL,
         "analyze_entry",
@@ -312,6 +323,7 @@ async def analyze_journal_entry(content: str, mood_label: str) -> dict:
         _check_analysis,
         # High effort because the safety flag rides on this call.
         effort="high",
+        eval_run_id=eval_run_id,
         # No prompt caching on either call: entries arrive far more than 5 minutes apart, so a
         # cache write (1.25x input price) would almost never be read back.
         messages=[
@@ -403,6 +415,7 @@ async def recommend_exercises(
     distortions: list[str] | None = None,
     positive_patterns: list[str] | None = None,
     context: str = "",
+    eval_run_id: str | None = None,
 ) -> dict:
     return await _structured_call(
         RECOMMEND_MODEL,
@@ -410,6 +423,7 @@ async def recommend_exercises(
         RECOMMEND_SCHEMA,
         _check_exercises,
         effort="low",
+        eval_run_id=eval_run_id,
         messages=[
             {"role": "system", "content": RECOMMEND_SYSTEM_PROMPT},
             {
