@@ -33,7 +33,7 @@ Within those:
 | `mindframe/lib/api.ts` | The only place that calls FastAPI — attaches the JWT, hits `NEXT_PUBLIC_API_URL`. |
 | `mindframe/proxy.ts` | Edge proxy (Next.js 16's renamed Middleware) — gates every non-public route on a valid session. |
 | `mindframe-api/routers/` | HTTP handlers only — validate input, delegate to services, return Pydantic models. |
-| `mindframe-api/services/claude_service.py` | All GPT/Claude calls isolated here (see §5); calls Claude through LiteLLM (`litellm.acompletion`). |
+| `mindframe-api/services/llm_service.py` | All LLM calls isolated here (see §5); calls Anthropic/OpenAI through LiteLLM (`litellm.acompletion`). |
 | `mindframe-api/db/models/` | SQLAlchemy ORM models — source of truth for schema. |
 | `mindframe-api/models/` | Pydantic request/response schemas — kept separate from ORM models on purpose. |
 | `mindframe-api/db/session.py` | `get_db()` dependency injected into every route that needs DB access. |
@@ -89,7 +89,7 @@ calls FastAPI at `NEXT_PUBLIC_API_URL` (default `http://localhost:8000`). Next.j
 database access.
 
 **FastAPI layers** — `routers/` are HTTP handlers only and delegate to services;
-`services/claude_service.py` isolates all Claude calls; `db/models/` are SQLAlchemy ORM models
+`services/llm_service.py` isolates all LLM calls; `db/models/` are SQLAlchemy ORM models
 (source of truth for schema); `models/` are Pydantic request/response schemas, kept separate
 from ORM models.
 
@@ -124,7 +124,7 @@ Two boundaries are load-bearing and routinely tempting to shortcut:
 
 - **Next.js never touches Postgres.** All data access goes through `mindframe/lib/api.ts`,
   which attaches the JWT and calls FastAPI. Don't add a direct DB client to the frontend, ever.
-- **`mindframe-api/services/claude_service.py` is the only file allowed to call an LLM
+- **`mindframe-api/services/llm_service.py` is the only file allowed to call an LLM
   provider or read a provider API key (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`).** Routers and
   other services must work in terms of what that file returns, not call the model themselves.
 
@@ -177,7 +177,7 @@ sanctioned exception to the "no white, no system fonts" rule (the Google sign-in
 ## 8. Testing
 
 There is **no test framework set up** in either service — don't assume one exists or invent
-commands. When tests are introduced, mock the LiteLLM call in `claude_service.py` rather than
+commands. When tests are introduced, mock the LiteLLM call in `llm_service.py` rather than
 hitting the live API, and confirm the framework choice with the maintainer before adding a new
 dependency.
 
@@ -276,7 +276,7 @@ README update`) — it does **not** follow this today. Going forward, prefer:
 - Description is lowercase, imperative mood, no trailing period: `fix: handle empty mood
   entry`, not `Fixed the mood entry.`.
 - Scope is optional and names the affected area, e.g. `feat(journal): …`,
-  `fix(claude-service): …`, `feat(dashboard): …`.
+  `fix(llm-service): …`, `feat(dashboard): …`.
 - **Breaking changes** are marked either with a `!` before the colon (`feat(api)!: …`) **or**
   a `BREAKING CHANGE: <description>` footer (→ MAJOR). The `!` may be used without the footer.
 - Footers use git-trailer style, e.g. `Refs: #12`.
@@ -288,7 +288,7 @@ feat(journal): add full-text search across entries
 fix(dashboard): handle empty mood entry on first login
 docs: tighten the README setup steps
 build: bump next to 16.1
-refactor(claude-service)!: route Claude calls through a retry wrapper
+refactor(llm-service)!: route Claude calls through a retry wrapper
 
-BREAKING CHANGE: claude_service.generate_insight now returns a Result type instead of raising.
+BREAKING CHANGE: llm_service.generate_insight now returns a Result type instead of raising.
 ```
