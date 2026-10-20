@@ -7,7 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "biome lint .",
     "check": "biome check .",
     "check:fix": "biome check --write ."
   },
@@ -32,8 +32,6 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "autoprefixer": "^10.4.20",
-    "eslint": "^9.0.0",
-    "eslint-config-next": "^16.0.0",
     "postcss": "^8.4.47",
     "tailwindcss": "^4.3.0",
     "typescript": "^5.6.3"
