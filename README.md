@@ -37,6 +37,7 @@ A personal journaling app with AI-powered reflection. Write free-text entries, t
 │   ├── db/models/      # SQLAlchemy ORM models
 │   ├── models/         # Pydantic request/response schemas
 │   ├── alembic/        # Database migrations
+│   ├── scripts/        # Dev scripts (seed_entries.py adds and analyzes sample entries)
 │   └── sql/            # Reporting queries (LLM cost and latency)
 └── docker-compose.yml  # PostgreSQL only
 ```
@@ -152,7 +153,10 @@ Backend (from `mindframe-api/`):
 
 ```bash
 uv run alembic check     # Confirm ORM models and migrations agree
+uv run python -m scripts.seed_entries   # Add and analyze the 20 sample entries (real model calls, ~$0.20)
 ```
+
+`seed_entries` adds the entries in `scripts/sample_entries.json` for the only user (sign in once first, or pass `--email`) and analyzes them one at a time through the same code path as a saved entry, so their `llm_calls` rows count as real-user calls. Use `--limit N` for a quick check or `--file` for your own JSON list of `{"content", "mood_label"}` objects.
 
 Contributor and AI-agent conventions (branching, commits, code style, service boundaries) live in [AGENTS.md](AGENTS.md); the design system is in [DESIGN.md](DESIGN.md).
 

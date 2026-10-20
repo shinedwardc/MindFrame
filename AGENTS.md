@@ -42,6 +42,7 @@ Within those:
 | `mindframe-api/models/` | Pydantic request/response schemas — kept separate from ORM models on purpose. |
 | `mindframe-api/db/session.py` | `get_db()` dependency injected into every route that needs DB access; `SessionLocal` for code outside a request (background tasks, call logging). |
 | `mindframe-api/sql/` | `llm_call_stats.sql` (real-user cost and p50/p95 latency per task) and `eval_run_stats.sql` (the same for one eval run). |
+| `mindframe-api/scripts/` | Dev scripts run with `uv run python -m scripts.<name>`. `seed_entries.py` adds `sample_entries.json` (fictional entries) for one user and analyzes each via `routers.journal._run_analysis`. |
 
 Import alias: `@/*` maps to the `mindframe/` root (see `mindframe/tsconfig.json`).
 
@@ -75,7 +76,12 @@ fix them in an unrelated PR; just don't add new ones.
 uv sync                              # create/refresh .venv from uv.lock
 uv run uvicorn main:app --reload     # http://localhost:8000 (GET /health → {"status":"ok"})
 uv add <package>                     # add a dependency (updates pyproject.toml and uv.lock)
+uv run python -m scripts.seed_entries --limit 1   # add + analyze sample entries (real model calls)
 ```
+
+`seed_entries` makes billed model calls and writes real-user `llm_calls` rows (`eval_run_id`
+NULL), so it shifts the `llm_call_stats.sql` numbers; point `DATABASE_URL` at a throwaway database
+when you only want to check that it runs.
 
 There is no `requirements.txt` and no pip workflow. Prefix every backend command with `uv run`:
 it syncs `.venv` first. Running `.venv/bin/python` or an activated venv directly skips the sync
