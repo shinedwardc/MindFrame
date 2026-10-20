@@ -109,8 +109,8 @@ unauthenticated users to `/` before any page renders.
 
 `mindframe-api/.env` — `DATABASE_URL`, `ANTHROPIC_API_KEY`, `FRONTEND_URL`, `JWT_SECRET`
 (must match `NEXTAUTH_SECRET`). Optional: `LLM_ANALYZE_MODEL` / `LLM_RECOMMEND_MODEL` pick the
-model per call as a `<provider>/<model>` LiteLLM id (defaults `anthropic/claude-sonnet-4-6` /
-`anthropic/claude-haiku-4-5-20251001`; `anthropic/` and `openai/` are supported), and
+model per call as a `<provider>/<model>` LiteLLM id (defaults `anthropic/claude-sonnet-5-5` /
+`anthropic/claude-haiku-5-5`; `anthropic/` and `openai/` are supported), and
 `OPENAI_API_KEY` is required once either points at `openai/`.
 
 Never commit either file or print a provider API key / `JWT_SECRET` in logs — and never log

@@ -21,8 +21,12 @@ PROVIDER_API_KEY_ENV = {
     "openai": "OPENAI_API_KEY",
 }
 
-ANALYZE_MODEL = os.getenv("LLM_ANALYZE_MODEL", "anthropic/claude-sonnet-4-6")
-RECOMMEND_MODEL = os.getenv("LLM_RECOMMEND_MODEL", "anthropic/claude-haiku-4-5-20251001")
+ANALYZE_MODEL = os.getenv("LLM_ANALYZE_MODEL", "anthropic/claude-sonnet-5-5")
+RECOMMEND_MODEL = os.getenv("LLM_RECOMMEND_MODEL", "anthropic/claude-haiku-5-5")
+
+
+class LLMRefusalError(Exception):
+    """The model declined the request (Anthropic stop_reason "refusal")."""
 
 
 def _provider_kwargs(model: str) -> dict:
@@ -106,7 +110,10 @@ MOOD
 - mood_score: 1-3 = significant distress, 4-6 = mixed/mild, 7-10 = positive.
  
 SAFETY (highest priority)
-- If the entry contains any indication of suicidal thoughts, intent to self-harm, or acute crisis, set acute_risk_detected to true. This assessment overrides everything else; when true, the application will surface support resources and will not present the entry as a list of distortions."""
+- If the entry contains any indication of suicidal thoughts, intent to self-harm, or acute crisis, set acute_risk_detected to true. This assessment overrides everything else; when true, the application will surface support resources and will not present the entry as a list of distortions.
+
+OUTPUT
+- Return your analysis by calling the analyze_entry tool exactly once. Do not reply in plain text."""
  
  
 def _pattern_item(enum_values: list[str]) -> dict:
@@ -132,18 +139,30 @@ def _pattern_item(enum_values: list[str]) -> dict:
     }
  
  
-def _tool_arguments(response, tool_name: str) -> dict:
-    tool_call = next(
-        (
-            call
-            for call in response.choices[0].message.tool_calls or []
-            if call.function.name == tool_name
-        ),
-        None,
-    )
-    if tool_call is None:
-        raise ValueError(f"Expected {tool_name} tool call in model response")
-    return json.loads(tool_call.function.arguments)
+async def _call_tool(model: str, tool: dict, messages: list[dict], **params) -> dict:
+    tool_name = tool["function"]["name"]
+    # tool_choice stays "auto": Claude Sonnet 5.5 rejects a forced tool call with a 400, so
+    # the system prompt asks for the call and a reply without one gets a single retry.
+    # drop_params lets models without effort control (e.g. gpt-4.1) ignore reasoning_effort.
+    for _ in range(2):
+        response = await litellm.acompletion(
+            **_provider_kwargs(model),
+            tools=[tool],
+            tool_choice="auto",
+            messages=messages,
+            drop_params=True,
+            **params,
+        )
+        choice = response.choices[0]
+        if choice.finish_reason == "content_filter":
+            raise LLMRefusalError(f"{model} declined the {tool_name} request")
+        tool_call = next(
+            (call for call in choice.message.tool_calls or [] if call.function.name == tool_name),
+            None,
+        )
+        if tool_call is not None:
+            return json.loads(tool_call.function.arguments)
+    raise ValueError(f"Expected {tool_name} tool call in model response")
 
 
 ANALYZE_TOOL = {
@@ -201,11 +220,12 @@ ANALYZE_TOOL = {
 
 
 async def analyze_journal_entry(content: str, mood_label: str) -> dict:
-    response = await litellm.acompletion(
-        **_provider_kwargs(ANALYZE_MODEL),
-        max_tokens=1024,
-        tools=[ANALYZE_TOOL],
-        tool_choice={"type": "function", "function": {"name": "analyze_entry"}},
+    return await _call_tool(
+        ANALYZE_MODEL,
+        ANALYZE_TOOL,
+        # Thinking counts toward max_tokens; high effort because the safety flag rides on this call.
+        max_tokens=16000,
+        reasoning_effort="high",
         messages=[
             {
                 "role": "system",
@@ -226,7 +246,6 @@ async def analyze_journal_entry(content: str, mood_label: str) -> dict:
             },
         ],
     )
-    return _tool_arguments(response, "analyze_entry")
 
 
 EXERCISE_TYPES = [
@@ -252,6 +271,7 @@ RULES
 - When adaptive patterns are already present, reinforce and build on them rather than ignoring them.
 - When mood is high and distortions are absent, prefer maintenance-focused types: gratitude_practice, values_clarification, mindfulness.
 - Never recommend the same exercise_type more than once.
+- Return the recommendations by calling the recommend_exercises tool exactly once. Do not reply in plain text.
 
 EXERCISE TYPE GUIDE
 - thought_record: identify an automatic thought, examine the evidence for and against it, generate a balanced alternative.
@@ -304,11 +324,11 @@ async def recommend_exercises(
     positive_patterns: list[str] | None = None,
     context: str = "",
 ) -> dict:
-    response = await litellm.acompletion(
-        **_provider_kwargs(RECOMMEND_MODEL),
-        max_tokens=2048,
-        tools=[RECOMMEND_TOOL],
-        tool_choice={"type": "function", "function": {"name": "recommend_exercises"}},
+    return await _call_tool(
+        RECOMMEND_MODEL,
+        RECOMMEND_TOOL,
+        max_tokens=16000,
+        reasoning_effort="low",
         messages=[
             {
                 "role": "system",
@@ -325,4 +345,3 @@ async def recommend_exercises(
             },
         ],
     )
-    return _tool_arguments(response, "recommend_exercises")
