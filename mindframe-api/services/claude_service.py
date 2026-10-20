@@ -1,10 +1,23 @@
-from anthropic import AsyncAnthropic
+import json
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
-client = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+# Use the bundled model cost map instead of fetching it from GitHub at import time.
+os.environ.setdefault("LITELLM_LOCAL_MODEL_COST_MAP", "True")
+
+import litellm
+
+# Journal entries must never reach logs: redact message content from any LiteLLM
+# logging callback and silence its debug/help output.
+litellm.turn_off_message_logging = True
+litellm.suppress_debug_info = True
+
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+
+ANALYZE_MODEL = "anthropic/claude-sonnet-4-6"
+RECOMMEND_MODEL = "anthropic/claude-haiku-4-5-20251001"
 
 DISTORTIONS = [
     "all_or_nothing_thinking",
@@ -97,92 +110,102 @@ def _pattern_item(enum_values: list[str]) -> dict:
     }
  
  
+def _tool_arguments(response, tool_name: str) -> dict:
+    tool_call = next(
+        (
+            call
+            for call in response.choices[0].message.tool_calls or []
+            if call.function.name == tool_name
+        ),
+        None,
+    )
+    if tool_call is None:
+        raise ValueError(f"Expected {tool_name} tool call in model response")
+    return json.loads(tool_call.function.arguments)
+
+
 ANALYZE_TOOL = {
-    "name": "analyze_entry",
-    "description": (
-        "Return sentiment, cognitive distortions, adaptive thinking patterns, "
-        "and a safety flag for the journal entry."
-    ),
-    "input_schema": {
-        "type": "object",
-        "properties": {
-            "mood_score": {
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 10,
-                "description": "Overall emotional tone of the entry.",
+    "type": "function",
+    "function": {
+        "name": "analyze_entry",
+        "description": (
+            "Return sentiment, cognitive distortions, adaptive thinking patterns, "
+            "and a safety flag for the journal entry."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "mood_score": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10,
+                    "description": "Overall emotional tone of the entry.",
+                },
+                "sentiment": {
+                    "type": "string",
+                    "enum": ["positive", "negative", "neutral", "mixed"],
+                    "description": "Overall emotional sentiment.",
+                },
+                "acute_risk_detected": {
+                    "type": "boolean",
+                    "description": (
+                        "True if the entry indicates suicidal ideation, intent to self-harm, "
+                        "or acute crisis. When true, the app should surface support resources "
+                        "and must NOT present this entry as a set of 'distortions'."
+                    ),
+                },
+                "distortions": {
+                    "type": "array",
+                    "items": _pattern_item(DISTORTIONS),
+                    "description": "Cognitive distortions clearly evidenced in the entry. Empty array if none.",
+                },
+                "positive_patterns": {
+                    "type": "array",
+                    "items": _pattern_item(POSITIVE_PATTERNS),
+                    "description": "Adaptive/healthy thinking patterns clearly evidenced in the entry. Empty array if none.",
+                },
             },
-            "sentiment": {
-                "type": "string",
-                "enum": ["positive", "negative", "neutral", "mixed"],
-                "description": "Overall emotional sentiment.",
-            },
-            "acute_risk_detected": {
-                "type": "boolean",
-                "description": (
-                    "True if the entry indicates suicidal ideation, intent to self-harm, "
-                    "or acute crisis. When true, the app should surface support resources "
-                    "and must NOT present this entry as a set of 'distortions'."
-                ),
-            },
-            "distortions": {
-                "type": "array",
-                "items": _pattern_item(DISTORTIONS),
-                "description": "Cognitive distortions clearly evidenced in the entry. Empty array if none.",
-            },
-            "positive_patterns": {
-                "type": "array",
-                "items": _pattern_item(POSITIVE_PATTERNS),
-                "description": "Adaptive/healthy thinking patterns clearly evidenced in the entry. Empty array if none.",
-            },
+            "required": [
+                "mood_score",
+                "sentiment",
+                "acute_risk_detected",
+                "distortions",
+                "positive_patterns",
+            ],
         },
-        "required": [
-            "mood_score",
-            "sentiment",
-            "acute_risk_detected",
-            "distortions",
-            "positive_patterns",
-        ],
     },
     "cache_control": {"type": "ephemeral"},
 }
- 
- 
+
+
 async def analyze_journal_entry(content: str, mood_label: str) -> dict:
-    response = await client.messages.create(
-        model="claude-sonnet-4-6",
+    response = await litellm.acompletion(
+        model=ANALYZE_MODEL,
+        api_key=ANTHROPIC_API_KEY,
         max_tokens=1024,
-        system=[
-            {
-                "type": "text",
-                "text": SYSTEM_PROMPT,
-                "cache_control": {"type": "ephemeral"},
-            }
-        ],
         tools=[ANALYZE_TOOL],
-        tool_choice={"type": "tool", "name": "analyze_entry"},
+        tool_choice={"type": "function", "function": {"name": "analyze_entry"}},
         messages=[
+            {
+                "role": "system",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": SYSTEM_PROMPT,
+                        "cache_control": {"type": "ephemeral"},
+                    }
+                ],
+            },
             {
                 "role": "user",
                 "content": (
                     f"Journal entry: {content}\n\n"
                     f"User's self-reported mood: {mood_label}"
                 ),
-            }
+            },
         ],
     )
-    tool_block = next(
-        (
-            block
-            for block in response.content
-            if getattr(block, "type", None) == "tool_use"
-            and getattr(block, "name", None) == "analyze_entry"
-        ),
-        None,
-    )
-    if tool_block is None:
-        raise ValueError("Expected analyze_entry tool_use block in Claude response")
-    return tool_block.input
+    return _tool_arguments(response, "analyze_entry")
 
 
 EXERCISE_TYPES = [
@@ -224,28 +247,31 @@ EXERCISE TYPE GUIDE
 - values_clarification: identify what matters most to you and examine how today's actions align with those values."""
 
 RECOMMEND_TOOL = {
-    "name": "recommend_exercises",
-    "description": "Return exactly 3 CBT exercise recommendations tailored to the entry's mood, distortions, and adaptive patterns.",
-    "input_schema": {
-        "type": "object",
-        "properties": {
-            "exercises": {
-                "type": "array",
-                "minItems": 3,
-                "maxItems": 3,
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "title": {"type": "string"},
-                        "description": {"type": "string"},
-                        "steps": {"type": "array", "items": {"type": "string"}},
-                        "exercise_type": {"type": "string", "enum": EXERCISE_TYPES},
+    "type": "function",
+    "function": {
+        "name": "recommend_exercises",
+        "description": "Return exactly 3 CBT exercise recommendations tailored to the entry's mood, distortions, and adaptive patterns.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "exercises": {
+                    "type": "array",
+                    "minItems": 3,
+                    "maxItems": 3,
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "title": {"type": "string"},
+                            "description": {"type": "string"},
+                            "steps": {"type": "array", "items": {"type": "string"}},
+                            "exercise_type": {"type": "string", "enum": EXERCISE_TYPES},
+                        },
+                        "required": ["title", "description", "steps", "exercise_type"],
                     },
-                    "required": ["title", "description", "steps", "exercise_type"],
                 },
             },
+            "required": ["exercises"],
         },
-        "required": ["exercises"],
     },
     "cache_control": {"type": "ephemeral"},
 }
@@ -257,13 +283,17 @@ async def recommend_exercises(
     positive_patterns: list[str] | None = None,
     context: str = "",
 ) -> dict:
-    response = await client.messages.create(
-        model="claude-haiku-4-5-20251001",
+    response = await litellm.acompletion(
+        model=RECOMMEND_MODEL,
+        api_key=ANTHROPIC_API_KEY,
         max_tokens=2048,
-        system=[{"type": "text", "text": RECOMMEND_SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}],
         tools=[RECOMMEND_TOOL],
-        tool_choice={"type": "tool", "name": "recommend_exercises"},
+        tool_choice={"type": "function", "function": {"name": "recommend_exercises"}},
         messages=[
+            {
+                "role": "system",
+                "content": [{"type": "text", "text": RECOMMEND_SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}],
+            },
             {
                 "role": "user",
                 "content": (
@@ -272,17 +302,7 @@ async def recommend_exercises(
                     f"Adaptive patterns already present: {', '.join(positive_patterns) if positive_patterns else 'none'}.\n"
                     f"Journal entry:\n{context}"
                 ),
-            }
+            },
         ],
     )
-    tool_block = next(
-        (
-            block for block in response.content
-            if getattr(block, "type", None) == "tool_use"
-            and getattr(block, "name", None) == "recommend_exercises"
-        ),
-        None,
-    )
-    if tool_block is None:
-        raise ValueError("Expected recommend_exercises tool_use block in Claude response")
-    return tool_block.input
+    return _tool_arguments(response, "recommend_exercises")

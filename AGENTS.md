@@ -33,7 +33,7 @@ Within those:
 | `mindframe/lib/api.ts` | The only place that calls FastAPI — attaches the JWT, hits `NEXT_PUBLIC_API_URL`. |
 | `mindframe/proxy.ts` | Edge proxy (Next.js 16's renamed Middleware) — gates every non-public route on a valid session. |
 | `mindframe-api/routers/` | HTTP handlers only — validate input, delegate to services, return Pydantic models. |
-| `mindframe-api/services/claude_service.py` | All GPT/Claude calls isolated here (see §5); uses `AsyncAnthropic`. |
+| `mindframe-api/services/claude_service.py` | All GPT/Claude calls isolated here (see §5); calls Claude through LiteLLM (`litellm.acompletion`). |
 | `mindframe-api/db/models/` | SQLAlchemy ORM models — source of truth for schema. |
 | `mindframe-api/models/` | Pydantic request/response schemas — kept separate from ORM models on purpose. |
 | `mindframe-api/db/session.py` | `get_db()` dependency injected into every route that needs DB access. |
