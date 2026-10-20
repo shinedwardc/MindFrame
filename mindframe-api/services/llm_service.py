@@ -349,17 +349,10 @@ async def analyze_journal_entry(content: str, mood_label: str) -> dict:
         _check_analysis,
         # High effort because the safety flag rides on this call.
         effort="high",
+        # No prompt caching on either call: entries arrive far more than 5 minutes apart, so a
+        # cache write (1.25x input price) would almost never be read back.
         messages=[
-            {
-                "role": "system",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": SYSTEM_PROMPT,
-                        "cache_control": {"type": "ephemeral"},
-                    }
-                ],
-            },
+            {"role": "system", "content": SYSTEM_PROMPT},
             {
                 "role": "user",
                 "content": (
@@ -455,10 +448,7 @@ async def recommend_exercises(
         _check_exercises,
         effort="low",
         messages=[
-            {
-                "role": "system",
-                "content": [{"type": "text", "text": RECOMMEND_SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}],
-            },
+            {"role": "system", "content": RECOMMEND_SYSTEM_PROMPT},
             {
                 "role": "user",
                 "content": (
