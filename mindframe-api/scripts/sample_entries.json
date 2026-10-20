@@ -1,0 +1,82 @@
+[
+  {
+    "mood_label": "Good",
+    "content": "Finally finished the quarterly report today. I'd been dreading it for two weeks and it turned out to take about four hours once I actually sat down. My manager said the summary section was clear, which felt nice. I took a long walk after lunch and noticed the leaves are starting to turn. I want to remember that the anticipation was worse than the work."
+  },
+  {
+    "mood_label": "Low",
+    "content": "Didn't sleep well again. I kept replaying the conversation with Dana from yesterday where she went quiet after I suggested changing the deadline. I'm sure she thinks I'm trying to dodge the work. I'll probably have to apologize tomorrow even though I'm not totally sure what I'd be apologizing for. Coffee isn't helping and the whole day felt gray and slow."
+  },
+  {
+    "mood_label": "Okay",
+    "content": "Ordinary Tuesday. Gym in the morning, meetings until two, then a block of focused time that mostly went to answering emails instead of the design doc I meant to start. Made pasta for dinner and watched half a movie before getting tired. Nothing bad happened, nothing great either. I'd like tomorrow to have at least one hour where I build something instead of reacting."
+  },
+  {
+    "mood_label": "Struggling",
+    "content": "I bombed the interview. I froze on the second technical question, a basic one, and I could see the interviewer stop taking notes. I always fall apart when it matters. Everyone else in my cohort already has offers and I'm still here refreshing my inbox. My mom called to ask how it went and I couldn't bring myself to tell her. I should be further along than this by now. I keep thinking that if I can't pass a simple screen, maybe I'm just not cut out for this field at all, and the last two years of studying were a waste."
+  },
+  {
+    "mood_label": "Great",
+    "content": "My sister had her baby this morning! A little girl, seven pounds, and both of them are healthy. I drove three hours to the hospital and got to hold her for about ten minutes. She has my dad's nose. I cried in the parking lot afterward, the good kind. I'm so grateful the delivery went smoothly after how worried everyone was last month. Already planning which books to buy her."
+  },
+  {
+    "mood_label": "Low",
+    "content": "Rent went up again, by almost two hundred dollars. I sat down and redid my budget and it works, but only if I cut the climbing gym membership and stop eating out on weekends. It's not a disaster, just frustrating. I made a list of three cheaper apartments to look at in the spring and set a reminder to call the landlord about the lease terms. At least I have a plan now."
+  },
+  {
+    "mood_label": "Okay",
+    "content": "Mixed day. The morning was rough because I overslept and missed standup, and I felt guilty about it for hours. But the afternoon pairing session with Marcus went really well and we fixed the flaky test that's been bugging the whole team. Parts of today were bad and parts were genuinely good. I don't need to decide the whole day was one or the other."
+  },
+  {
+    "mood_label": "Good",
+    "content": "Called my grandfather for the first time in a month. He told me the story about working at the shipyard again, the one I've heard a dozen times, but I let him tell it all the way through and asked questions I've never asked before. He sounded happy. I've been meaning to call more often and kept putting it off because I was busy. Going to set a standing Sunday call."
+  },
+  {
+    "mood_label": "Struggling",
+    "content": "Third day in a row I couldn't make myself go outside. The apartment is a mess, dishes piled up, and every time I look at them I feel worse, so I don't look. I canceled on Priya again tonight. She said it was fine but she's probably done inviting me. I know this pattern from last winter. I don't feel in danger or anything, just heavy and stuck, like everything takes twice the energy it should. I think I need to email my old therapist tomorrow and at least ask if she has openings. Writing that down so I actually do it."
+  },
+  {
+    "mood_label": "Okay",
+    "content": "Short one. Work was fine. Rained all day so I skipped my run and did twenty minutes of yoga in the living room instead, which was better than nothing. Finished the book I've been reading for a month. The ending was a little flat but I'm glad I stuck with it. Early night tonight because tomorrow starts with a seven a.m. call."
+  },
+  {
+    "mood_label": "Low",
+    "content": "Got feedback on my pull request today and there were eleven comments. Most of them were small naming things but a couple pointed out a real bug I missed. I know rationally this is how code review is supposed to work, and the reviewer was polite about it. Still, it stung. I keep hearing \"that doesn't count\" in my head whenever someone praises the parts that were right, like only the mistakes are real. Going to fix them tomorrow morning when I'm fresh."
+  },
+  {
+    "mood_label": "Good",
+    "content": "Hosted game night for the first time since moving here. Six people came, including two from the running club I've only talked to a couple of times. We played way too many rounds of Codenames and someone brought homemade dumplings. I was nervous all afternoon that it would be awkward, but it wasn't. It felt like the first time this city has started to feel like home."
+  },
+  {
+    "mood_label": "Struggling",
+    "content": "Big fight with Jordan tonight about money, again. It started with something small, the grocery bill, and turned into him saying I never plan ahead and me saying he never listens. Neither of those is true, and I know that, but in the moment it felt completely true. Now he's asleep and I'm on the couch with my heart still racing. If we can't even talk about groceries without it blowing up, how are we supposed to handle buying a house? Everything feels ruined tonight. I know I'll see it differently in the morning but right now I can't."
+  },
+  {
+    "mood_label": "Okay",
+    "content": "Spent most of Saturday on chores I've been avoiding: oil change, returning the package that sat by the door for two weeks, finally hanging the shelf. None of it was fun. But crossing three things off the list made the rest of the weekend feel lighter, and I got to spend Sunday afternoon reading at the park without the to-do list nagging at me."
+  },
+  {
+    "mood_label": "Great",
+    "content": "Got the promotion. My manager told me this afternoon and said the team specifically pointed to how I handled the outage in August. Six months ago I didn't think I'd be ready for a lead role, and honestly I'm still a bit nervous about managing people who used to be my peers. But I've handled harder things than this, and I'll figure it out the same way I figured out the outage, one step at a time. Celebrated with tacos and called my parents, who were thrilled."
+  },
+  {
+    "mood_label": "Low",
+    "content": "I've been comparing myself to people online again. Old classmates posting about engagements, new houses, startup funding. I know it's a highlight reel and nobody posts their bad Tuesdays, but it still left me feeling behind. I deleted the app from my phone for the week. Instead I wrote down three things I'm actually proud of this year: running my first 10K, learning to cook properly, and sticking with this job through a hard stretch. That helped a little."
+  },
+  {
+    "mood_label": "Okay",
+    "content": "Doctor's appointment went fine. The bloodwork came back mostly normal, a little low on vitamin D, which apparently is extremely common this time of year. I'd been worrying about it more than I admitted to anyone. On the way home I stopped at the pharmacy for supplements and bought myself a nice coffee as a small reward for actually going instead of postponing it a third time."
+  },
+  {
+    "mood_label": "Good",
+    "content": "Volunteered at the food bank this morning with my coworker Sam. We sorted canned goods for three hours and talked about everything from her kids to the weird podcast she's obsessed with. I didn't expect it to feel so good to do something concrete for other people. I've spent so much of this month stuck in my own head that getting out of it for a few hours felt like a reset."
+  },
+  {
+    "mood_label": "Low",
+    "content": "The project I've been working on for four months got canceled in the all-hands today. Leadership said it's a change in priorities and not about the work, and my manager pulled me aside to say the same thing. I believe them, mostly. It's still hard to watch something you built get shelved. I can't change the decision, so I'm trying to let it be what it is and think about what I learned: the caching layer I wrote is the best code I've shipped, and I can reuse those ideas. Tomorrow I'll ask what the team is moving to next and see where I can be useful."
+  },
+  {
+    "mood_label": "Okay",
+    "content": "Long reflective one tonight because I can't sleep. It's been a year since I moved across the country for this job. Looking back, the first three months were the loneliest of my life. I ate dinner alone almost every night and wondered constantly if I'd made a huge mistake. Some of that still lingers; I miss my friends back home and the way I never had to explain myself to them. But I've also built real things here. I have a running group, a favorite bakery, a few coworkers I'd call friends. I'm better at my job than I was. I've learned I can start over somewhere unfamiliar and survive it, which I genuinely didn't know about myself a year ago. I'm not sure yet whether I'll stay long term. I think I'll give it one more year and then decide honestly, instead of deciding out of homesickness on a bad night like this one. For now that feels like enough of a plan."
+  }
+]
