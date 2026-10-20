@@ -102,7 +102,7 @@ GOOGLE_CLIENT_SECRET=...
 
 - **Auth** — NextAuth (Auth.js v5) handles Google OAuth and issues a JWT stored in a cookie. FastAPI verifies that JWT on every request using the shared secret, so there are no database sessions and Next.js never touches the database directly.
 - **Data flow** — all frontend data fetching goes through `mindframe/lib/api.ts`, which attaches the JWT as a Bearer token and calls FastAPI.
-- **AI calls** — isolated in `mindframe-api/services/claude_service.py` (entry analysis and exercise recommendations).
+- **AI calls** — isolated in `mindframe-api/services/llm_service.py` (entry analysis and exercise recommendations).
 - **Migrations** — Alembic owns the schema. After changing ORM models:
 
   ```bash

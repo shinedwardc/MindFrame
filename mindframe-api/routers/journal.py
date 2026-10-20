@@ -4,7 +4,7 @@ from models.journal import JournalEntryCreate, JournalEntryResponse, MOOD_LABEL_
 from db.session import get_db, SessionLocal
 from db.models.journal import JournalEntry
 from auth import get_current_user_id
-from services.claude_service import analyze_journal_entry, recommend_exercises
+from services.llm_service import analyze_journal_entry, recommend_exercises
 
 router = APIRouter()
 
