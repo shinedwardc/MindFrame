@@ -29,7 +29,7 @@ class LLMRefusalError(Exception):
     """The model declined the request (Anthropic stop_reason "refusal")."""
 
 
-def _provider_kwargs(model: str) -> dict:
+def _provider_kwargs(model: str, name: str, schema: dict, effort: str) -> dict:
     provider = model.split("/", 1)[0]
     if provider not in PROVIDER_API_KEY_ENV:
         raise ValueError(
@@ -40,7 +40,18 @@ def _provider_kwargs(model: str) -> dict:
     if not key:
         raise ValueError(f"{PROVIDER_API_KEY_ENV[provider]} is not set for model {model!r}")
     kwargs = {"model": model, "api_key": key}
-    if provider == "openai":
+    if provider == "anthropic":
+        # Sent as output_config directly: LiteLLM 1.103.3 doesn't know the Claude 5.5 models
+        # and would turn response_format into an unforced hidden tool call instead.
+        kwargs["output_config"] = {"format": {"type": "json_schema", "schema": schema}, "effort": effort}
+    else:
+        kwargs["response_format"] = {
+            "type": "json_schema",
+            "json_schema": {"name": name, "schema": schema, "strict": True},
+        }
+        kwargs["reasoning_effort"] = effort
+        # Lets models without effort control (e.g. gpt-4.1) ignore reasoning_effort.
+        kwargs["drop_params"] = True
         # OpenAI's Responses API stores responses by default; keep entry analyses off their servers.
         kwargs["store"] = False
     return kwargs
@@ -110,10 +121,7 @@ MOOD
 - mood_score: 1-3 = significant distress, 4-6 = mixed/mild, 7-10 = positive.
  
 SAFETY (highest priority)
-- If the entry contains any indication of suicidal thoughts, intent to self-harm, or acute crisis, set acute_risk_detected to true. This assessment overrides everything else; when true, the application will surface support resources and will not present the entry as a list of distortions.
-
-OUTPUT
-- Return your analysis by calling the analyze_entry tool exactly once. Do not reply in plain text."""
+- If the entry contains any indication of suicidal thoughts, intent to self-harm, or acute crisis, set acute_risk_detected to true. This assessment overrides everything else; when true, the application will surface support resources and will not present the entry as a list of distortions."""
  
  
 def _pattern_item(enum_values: list[str]) -> dict:
@@ -136,96 +144,96 @@ def _pattern_item(enum_values: list[str]) -> dict:
             },
         },
         "required": ["type", "quote", "reasoning", "confidence"],
+        "additionalProperties": False,
     }
- 
- 
-async def _call_tool(model: str, tool: dict, messages: list[dict], **params) -> dict:
-    tool_name = tool["function"]["name"]
-    # tool_choice stays "auto": Claude Sonnet 5.5 rejects a forced tool call with a 400, so
-    # the system prompt asks for the call and a reply without one gets a single retry.
-    # drop_params lets models without effort control (e.g. gpt-4.1) ignore reasoning_effort.
+
+
+async def _structured_call(
+    model: str,
+    name: str,
+    schema: dict,
+    check,
+    messages: list[dict],
+    effort: str,
+) -> dict:
+    # Structured outputs constrain the reply to `schema`. `check` enforces what the schema
+    # can't express there (number ranges, array lengths) and a failed check gets one retry.
+    problem = None
     for _ in range(2):
         response = await litellm.acompletion(
-            **_provider_kwargs(model),
-            tools=[tool],
-            tool_choice="auto",
+            **_provider_kwargs(model, name, schema, effort),
+            # Thinking counts toward max_tokens.
+            max_tokens=16000,
             messages=messages,
-            drop_params=True,
-            **params,
         )
         choice = response.choices[0]
         if choice.finish_reason == "content_filter":
-            raise LLMRefusalError(f"{model} declined the {tool_name} request")
-        tool_call = next(
-            (call for call in choice.message.tool_calls or [] if call.function.name == tool_name),
-            None,
-        )
-        if tool_call is not None:
-            return json.loads(tool_call.function.arguments)
-    raise ValueError(f"Expected {tool_name} tool call in model response")
+            raise LLMRefusalError(f"{model} declined the {name} request")
+        if choice.finish_reason == "length":
+            raise ValueError(f"{name} response hit max_tokens before it was complete")
+        result = json.loads(choice.message.content)
+        problem = check(result)
+        if problem is None:
+            return result
+    raise ValueError(f"Invalid {name} response: {problem}")
 
 
-ANALYZE_TOOL = {
-    "type": "function",
-    "function": {
-        "name": "analyze_entry",
-        "description": (
-            "Return sentiment, cognitive distortions, adaptive thinking patterns, "
-            "and a safety flag for the journal entry."
-        ),
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "mood_score": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 10,
-                    "description": "Overall emotional tone of the entry.",
-                },
-                "sentiment": {
-                    "type": "string",
-                    "enum": ["positive", "negative", "neutral", "mixed"],
-                    "description": "Overall emotional sentiment.",
-                },
-                "acute_risk_detected": {
-                    "type": "boolean",
-                    "description": (
-                        "True if the entry indicates suicidal ideation, intent to self-harm, "
-                        "or acute crisis. When true, the app should surface support resources "
-                        "and must NOT present this entry as a set of 'distortions'."
-                    ),
-                },
-                "distortions": {
-                    "type": "array",
-                    "items": _pattern_item(DISTORTIONS),
-                    "description": "Cognitive distortions clearly evidenced in the entry. Empty array if none.",
-                },
-                "positive_patterns": {
-                    "type": "array",
-                    "items": _pattern_item(POSITIVE_PATTERNS),
-                    "description": "Adaptive/healthy thinking patterns clearly evidenced in the entry. Empty array if none.",
-                },
-            },
-            "required": [
-                "mood_score",
-                "sentiment",
-                "acute_risk_detected",
-                "distortions",
-                "positive_patterns",
-            ],
+def _check_analysis(result: dict) -> str | None:
+    if not 1 <= result["mood_score"] <= 10:
+        return f"mood_score {result['mood_score']} is outside 1-10"
+    return None
+
+
+ANALYZE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "mood_score": {
+            "type": "integer",
+            "description": "Overall emotional tone of the entry, from 1 to 10.",
+        },
+        "sentiment": {
+            "type": "string",
+            "enum": ["positive", "negative", "neutral", "mixed"],
+            "description": "Overall emotional sentiment.",
+        },
+        "acute_risk_detected": {
+            "type": "boolean",
+            "description": (
+                "True if the entry indicates suicidal ideation, intent to self-harm, "
+                "or acute crisis. When true, the app should surface support resources "
+                "and must NOT present this entry as a set of 'distortions'."
+            ),
+        },
+        "distortions": {
+            "type": "array",
+            "items": _pattern_item(DISTORTIONS),
+            "description": "Cognitive distortions clearly evidenced in the entry. Empty array if none.",
+        },
+        "positive_patterns": {
+            "type": "array",
+            "items": _pattern_item(POSITIVE_PATTERNS),
+            "description": "Adaptive/healthy thinking patterns clearly evidenced in the entry. Empty array if none.",
         },
     },
-    "cache_control": {"type": "ephemeral"},
+    "required": [
+        "mood_score",
+        "sentiment",
+        "acute_risk_detected",
+        "distortions",
+        "positive_patterns",
+    ],
+    "additionalProperties": False,
 }
 
 
 async def analyze_journal_entry(content: str, mood_label: str) -> dict:
-    return await _call_tool(
+    return await _structured_call(
         ANALYZE_MODEL,
-        ANALYZE_TOOL,
-        # Thinking counts toward max_tokens; high effort because the safety flag rides on this call.
-        max_tokens=16000,
-        reasoning_effort="high",
+        "analyze_entry",
+        ANALYZE_SCHEMA,
+        _check_analysis,
+        # High effort because the safety flag rides on this call.
+        effort="high",
         messages=[
             {
                 "role": "system",
@@ -271,7 +279,6 @@ RULES
 - When adaptive patterns are already present, reinforce and build on them rather than ignoring them.
 - When mood is high and distortions are absent, prefer maintenance-focused types: gratitude_practice, values_clarification, mindfulness.
 - Never recommend the same exercise_type more than once.
-- Return the recommendations by calling the recommend_exercises tool exactly once. Do not reply in plain text.
 
 EXERCISE TYPE GUIDE
 - thought_record: identify an automatic thought, examine the evidence for and against it, generate a balanced alternative.
@@ -287,35 +294,37 @@ EXERCISE TYPE GUIDE
 - worry_journaling: write worries down in a dedicated slot, then consciously set them aside until next time.
 - values_clarification: identify what matters most to you and examine how today's actions align with those values."""
 
-RECOMMEND_TOOL = {
-    "type": "function",
-    "function": {
-        "name": "recommend_exercises",
-        "description": "Return exactly 3 CBT exercise recommendations tailored to the entry's mood, distortions, and adaptive patterns.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "exercises": {
-                    "type": "array",
-                    "minItems": 3,
-                    "maxItems": 3,
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "title": {"type": "string"},
-                            "description": {"type": "string"},
-                            "steps": {"type": "array", "items": {"type": "string"}},
-                            "exercise_type": {"type": "string", "enum": EXERCISE_TYPES},
-                        },
-                        "required": ["title", "description", "steps", "exercise_type"],
-                    },
+RECOMMEND_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "exercises": {
+            "type": "array",
+            "description": "Exactly 3 CBT exercise recommendations, each with a different exercise_type.",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string"},
+                    "description": {"type": "string"},
+                    "steps": {"type": "array", "items": {"type": "string"}},
+                    "exercise_type": {"type": "string", "enum": EXERCISE_TYPES},
                 },
+                "required": ["title", "description", "steps", "exercise_type"],
+                "additionalProperties": False,
             },
-            "required": ["exercises"],
         },
     },
-    "cache_control": {"type": "ephemeral"},
+    "required": ["exercises"],
+    "additionalProperties": False,
 }
+
+
+def _check_exercises(result: dict) -> str | None:
+    types = [exercise["exercise_type"] for exercise in result["exercises"]]
+    if len(types) != 3:
+        return f"expected 3 exercises, got {len(types)}"
+    if len(set(types)) != len(types):
+        return "an exercise_type is repeated"
+    return None
 
 
 async def recommend_exercises(
@@ -324,11 +333,12 @@ async def recommend_exercises(
     positive_patterns: list[str] | None = None,
     context: str = "",
 ) -> dict:
-    return await _call_tool(
+    return await _structured_call(
         RECOMMEND_MODEL,
-        RECOMMEND_TOOL,
-        max_tokens=16000,
-        reasoning_effort="low",
+        "recommend_exercises",
+        RECOMMEND_SCHEMA,
+        _check_exercises,
+        effort="low",
         messages=[
             {
                 "role": "system",
