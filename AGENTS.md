@@ -112,7 +112,9 @@ unauthenticated users to `/` before any page renders.
 (must match `NEXTAUTH_SECRET`). Optional: `LLM_ANALYZE_MODEL` / `LLM_RECOMMEND_MODEL` pick the
 model per call as a `<provider>/<model>` LiteLLM id (defaults `anthropic/claude-sonnet-5-5` /
 `anthropic/claude-haiku-5-5`; `anthropic/` and `openai/` are supported), and
-`OPENAI_API_KEY` is required once either points at `openai/`.
+`OPENAI_API_KEY` is required once either points at `openai/`. Every model attempt is logged to
+the `llm_calls` table and priced from `PRICES_PER_MTOK` in `llm_service.py`; add an entry
+whenever you point either variable at a new model, or its rows get `cost_usd` NULL.
 
 Never commit either file or print a provider API key / `JWT_SECRET` in logs — and never log
 journal entry content, per the guiding principle above.

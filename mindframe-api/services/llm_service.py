@@ -1,5 +1,8 @@
 import json
+import logging
 import os
+import time
+from decimal import Decimal
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -14,6 +17,11 @@ import litellm
 litellm.turn_off_message_logging = True
 litellm.suppress_debug_info = True
 
+from db.session import SessionLocal
+from db.models.llm_call import LLMCall
+
+logger = logging.getLogger(__name__)
+
 # Models are "<provider>/<model>" LiteLLM ids, e.g. "openai/gpt-5.5". Each provider's
 # key is read here and nowhere else (AGENTS.md §5).
 PROVIDER_API_KEY_ENV = {
@@ -23,6 +31,26 @@ PROVIDER_API_KEY_ENV = {
 
 ANALYZE_MODEL = os.getenv("LLM_ANALYZE_MODEL", "anthropic/claude-sonnet-5-5")
 RECOMMEND_MODEL = os.getenv("LLM_RECOMMEND_MODEL", "anthropic/claude-haiku-5-5")
+
+# USD per million tokens, used to price each row in llm_calls. LiteLLM's cost map can't be
+# used instead: for models it doesn't know (Claude 5.5 on 1.103.3) it returns $0 rather than
+# raising. A model missing here is logged with cost_usd NULL, so add any model you switch to.
+# Cache writes are the 5-minute TTL rate (1.25x input). Haiku 5.5's rates apply up to 100K
+# input tokens, far above any journal entry.
+PRICES_PER_MTOK = {
+    "anthropic/claude-sonnet-5-5": {
+        "input": Decimal("2.00"),
+        "output": Decimal("10.00"),
+        "cache_read": Decimal("0.20"),
+        "cache_write": Decimal("2.50"),
+    },
+    "anthropic/claude-haiku-5-5": {
+        "input": Decimal("0.10"),
+        "output": Decimal("0.50"),
+        "cache_read": Decimal("0.01"),
+        "cache_write": Decimal("0.125"),
+    },
+}
 
 
 class LLMRefusalError(Exception):
@@ -158,24 +186,111 @@ async def _structured_call(
 ) -> dict:
     # Structured outputs constrain the reply to `schema`. `check` enforces what the schema
     # can't express there (number ranges, array lengths) and a failed check gets one retry.
+    # Every attempt is recorded in llm_calls, since each one is billed.
     problem = None
     for _ in range(2):
-        response = await litellm.acompletion(
-            **_provider_kwargs(model, name, schema, effort),
-            # Thinking counts toward max_tokens.
-            max_tokens=16000,
-            messages=messages,
-        )
+        started = time.perf_counter()
+        try:
+            response = await litellm.acompletion(
+                **_provider_kwargs(model, name, schema, effort),
+                # Thinking counts toward max_tokens.
+                max_tokens=16000,
+                messages=messages,
+            )
+        except Exception as exc:
+            _record_call(name, model, _elapsed_ms(started), "error", error_type=type(exc).__name__)
+            raise
+        call = {"latency_ms": _elapsed_ms(started), **_token_usage(response)}
         choice = response.choices[0]
         if choice.finish_reason == "content_filter":
+            _record_call(name, model, status="refusal", **call)
             raise LLMRefusalError(f"{model} declined the {name} request")
         if choice.finish_reason == "length":
+            _record_call(name, model, status="truncated", **call)
             raise ValueError(f"{name} response hit max_tokens before it was complete")
-        result = json.loads(choice.message.content)
+        try:
+            result = json.loads(choice.message.content)
+        except json.JSONDecodeError as exc:
+            _record_call(name, model, status="invalid_output", error_type=type(exc).__name__, **call)
+            raise
         problem = check(result)
+        _record_call(name, model, status="success" if problem is None else "invalid_output", **call)
         if problem is None:
             return result
     raise ValueError(f"Invalid {name} response: {problem}")
+
+
+def _elapsed_ms(started: float) -> int:
+    return round((time.perf_counter() - started) * 1000)
+
+
+def _token_usage(response) -> dict:
+    # LiteLLM normalizes usage across providers: prompt_tokens is all input, of which
+    # cached_tokens were cache reads and cache_creation_tokens (Anthropic only) cache writes.
+    usage = response.usage
+    details = usage.prompt_tokens_details
+    cache_read = (details.cached_tokens if details else None) or 0
+    cache_creation = getattr(details, "cache_creation_tokens", None) or 0
+    return {
+        "input_tokens": usage.prompt_tokens - cache_read - cache_creation,
+        "cache_read_input_tokens": cache_read,
+        "cache_creation_input_tokens": cache_creation,
+        "output_tokens": usage.completion_tokens,
+    }
+
+
+def _cost_usd(
+    model: str,
+    input_tokens: int,
+    cache_read_input_tokens: int,
+    cache_creation_input_tokens: int,
+    output_tokens: int,
+) -> Decimal | None:
+    prices = PRICES_PER_MTOK.get(model)
+    if prices is None:
+        return None
+    return (
+        input_tokens * prices["input"]
+        + cache_read_input_tokens * prices["cache_read"]
+        + cache_creation_input_tokens * prices["cache_write"]
+        + output_tokens * prices["output"]
+    ) / 1_000_000
+
+
+def _record_call(
+    task: str,
+    model: str,
+    latency_ms: int,
+    status: str,
+    error_type: str | None = None,
+    input_tokens: int = 0,
+    cache_read_input_tokens: int = 0,
+    cache_creation_input_tokens: int = 0,
+    output_tokens: int = 0,
+) -> None:
+    tokens = {
+        "input_tokens": input_tokens,
+        "cache_read_input_tokens": cache_read_input_tokens,
+        "cache_creation_input_tokens": cache_creation_input_tokens,
+        "output_tokens": output_tokens,
+    }
+    db = SessionLocal()
+    try:
+        db.add(LLMCall(
+            task=task,
+            model=model,
+            status=status,
+            error_type=error_type,
+            latency_ms=latency_ms,
+            cost_usd=_cost_usd(model, **tokens),
+            **tokens,
+        ))
+        db.commit()
+    except Exception:
+        # Losing a log row must never fail the analysis itself.
+        logger.warning("Could not record LLM call for task %s", task, exc_info=True)
+    finally:
+        db.close()
 
 
 def _check_analysis(result: dict) -> str | None:
