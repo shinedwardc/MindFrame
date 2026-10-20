@@ -117,8 +117,9 @@ calls `analyze_journal_entry` and `recommend_exercises` and sets the status to `
 `failed`. A failed analysis must never lose the entry itself.
 
 **LLM call logging** — every `litellm.acompletion` attempt (retries and failures included)
-writes one `llm_calls` row: task, model, status, token counts split into uncached / cache-read /
-cache-write / output, latency, and `cost_usd` priced from `PRICES_PER_MTOK` in `llm_service.py`.
+writes one `llm_calls` row: task, model, status, input and output tokens, latency, and
+`cost_usd` priced from `PRICES_PER_MTOK` in `llm_service.py`. Prompt caching is deliberately
+off (entries arrive far more than 5 minutes apart, so cache writes never pay back).
 Rows hold numbers and labels only — never prompt or response text. A failed log write is
 swallowed with a warning so it can't fail the analysis.
 
