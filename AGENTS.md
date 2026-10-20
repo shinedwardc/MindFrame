@@ -193,15 +193,16 @@ dependency.
 - **Stay in your lane on UI.** Any visual change follows DESIGN.md exactly — Fraunces for
   editorial moments, DM Sans for everything else, no pure white, no gamification.
 - **Don't introduce dependencies casually** in either service — justify any new package.
-- **Branch, don't commit to `main` directly.** Name branches per §10. Run `pnpm check` (Biome
-  lint + formatting) before committing frontend changes.
+- **Committing and pushing directly to `main` is allowed.** Use a branch (named per §10) and a
+  PR when you want review. Run `pnpm check` (Biome lint + formatting) before committing
+  frontend changes.
 
 ---
 
 ## 10. Branch naming
 
-Branches follow **[Conventional Branch 1.1.0](https://conventionalbranch.org)**. Never
-commit to `main` directly (§9) — always branch off it. Format:
+Branches follow **[Conventional Branch 1.1.0](https://conventionalbranch.org)**. Direct
+commits to `main` are allowed (§9); when you do branch, branch off `main`. Format:
 
 ```
 <type>/<description>
