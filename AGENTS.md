@@ -54,7 +54,8 @@ docker compose up -d
 pnpm install
 pnpm dev          # http://localhost:3000
 pnpm build
-pnpm lint
+pnpm lint         # Biome lint rules only
+pnpm check        # Biome lint + formatting (check:fix to apply fixes)
 ```
 
 ### Backend (`mindframe-api/`)
@@ -153,6 +154,8 @@ function getDailyPrompt() { ... }
 ```
 
 Enforced by Biome (`pnpm check` / `pnpm check:fix` from `mindframe/`) — see `mindframe/biome.json`.
+Biome is the only linter and formatter in the frontend — there is no ESLint (Next.js 16 removed
+`next lint`), so don't add an ESLint config or `eslint-config-next` back.
 
 **Python** — no linter or formatter is configured yet. Until one is, match what's already
 there: routers stay thin (validate → delegate → return), services hold the logic, Pydantic
@@ -187,8 +190,8 @@ dependency.
 - **Stay in your lane on UI.** Any visual change follows DESIGN.md exactly — Fraunces for
   editorial moments, DM Sans for everything else, no pure white, no gamification.
 - **Don't introduce dependencies casually** in either service — justify any new package.
-- **Branch, don't commit to `main` directly.** Name branches per §10. Run `pnpm lint` before
-  committing frontend changes.
+- **Branch, don't commit to `main` directly.** Name branches per §10. Run `pnpm check` (Biome
+  lint + formatting) before committing frontend changes.
 
 ---
 
