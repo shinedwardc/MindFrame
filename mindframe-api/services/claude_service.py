@@ -14,10 +14,32 @@ import litellm
 litellm.turn_off_message_logging = True
 litellm.suppress_debug_info = True
 
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+# Models are "<provider>/<model>" LiteLLM ids, e.g. "openai/gpt-5.5". Each provider's
+# key is read here and nowhere else (AGENTS.md §5).
+PROVIDER_API_KEY_ENV = {
+    "anthropic": "ANTHROPIC_API_KEY",
+    "openai": "OPENAI_API_KEY",
+}
 
-ANALYZE_MODEL = "anthropic/claude-sonnet-4-6"
-RECOMMEND_MODEL = "anthropic/claude-haiku-4-5-20251001"
+ANALYZE_MODEL = os.getenv("LLM_ANALYZE_MODEL", "anthropic/claude-sonnet-4-6")
+RECOMMEND_MODEL = os.getenv("LLM_RECOMMEND_MODEL", "anthropic/claude-haiku-4-5-20251001")
+
+
+def _provider_kwargs(model: str) -> dict:
+    provider = model.split("/", 1)[0]
+    if provider not in PROVIDER_API_KEY_ENV:
+        raise ValueError(
+            f"Unsupported model {model!r}: expected one of "
+            f"{', '.join(f'{p}/<model>' for p in PROVIDER_API_KEY_ENV)}"
+        )
+    key = os.getenv(PROVIDER_API_KEY_ENV[provider])
+    if not key:
+        raise ValueError(f"{PROVIDER_API_KEY_ENV[provider]} is not set for model {model!r}")
+    kwargs = {"model": model, "api_key": key}
+    if provider == "openai":
+        # OpenAI's Responses API stores responses by default; keep entry analyses off their servers.
+        kwargs["store"] = False
+    return kwargs
 
 DISTORTIONS = [
     "all_or_nothing_thinking",
@@ -180,8 +202,7 @@ ANALYZE_TOOL = {
 
 async def analyze_journal_entry(content: str, mood_label: str) -> dict:
     response = await litellm.acompletion(
-        model=ANALYZE_MODEL,
-        api_key=ANTHROPIC_API_KEY,
+        **_provider_kwargs(ANALYZE_MODEL),
         max_tokens=1024,
         tools=[ANALYZE_TOOL],
         tool_choice={"type": "function", "function": {"name": "analyze_entry"}},
@@ -284,8 +305,7 @@ async def recommend_exercises(
     context: str = "",
 ) -> dict:
     response = await litellm.acompletion(
-        model=RECOMMEND_MODEL,
-        api_key=ANTHROPIC_API_KEY,
+        **_provider_kwargs(RECOMMEND_MODEL),
         max_tokens=2048,
         tools=[RECOMMEND_TOOL],
         tool_choice={"type": "function", "function": {"name": "recommend_exercises"}},

@@ -108,9 +108,12 @@ unauthenticated users to `/` before any page renders.
 `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
 
 `mindframe-api/.env` — `DATABASE_URL`, `ANTHROPIC_API_KEY`, `FRONTEND_URL`, `JWT_SECRET`
-(must match `NEXTAUTH_SECRET`)
+(must match `NEXTAUTH_SECRET`). Optional: `LLM_ANALYZE_MODEL` / `LLM_RECOMMEND_MODEL` pick the
+model per call as a `<provider>/<model>` LiteLLM id (defaults `anthropic/claude-sonnet-4-6` /
+`anthropic/claude-haiku-4-5-20251001`; `anthropic/` and `openai/` are supported), and
+`OPENAI_API_KEY` is required once either points at `openai/`.
 
-Never commit either file or print `ANTHROPIC_API_KEY` / `JWT_SECRET` in logs — and never log
+Never commit either file or print a provider API key / `JWT_SECRET` in logs — and never log
 journal entry content, per the guiding principle above.
 
 ---
@@ -121,9 +124,9 @@ Two boundaries are load-bearing and routinely tempting to shortcut:
 
 - **Next.js never touches Postgres.** All data access goes through `mindframe/lib/api.ts`,
   which attaches the JWT and calls FastAPI. Don't add a direct DB client to the frontend, ever.
-- **`mindframe-api/services/claude_service.py` is the only file allowed to call the Anthropic
-  API or read `ANTHROPIC_API_KEY`.** Routers and other services must work in terms of what
-  that file returns, not call the model themselves.
+- **`mindframe-api/services/claude_service.py` is the only file allowed to call an LLM
+  provider or read a provider API key (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`).** Routers and
+  other services must work in terms of what that file returns, not call the model themselves.
 
 Breaking either boundary is the easiest way to silently reintroduce a security or architecture
 bug that the rest of this file's conventions assume doesn't exist.
@@ -174,7 +177,7 @@ sanctioned exception to the "no white, no system fonts" rule (the Google sign-in
 ## 8. Testing
 
 There is **no test framework set up** in either service — don't assume one exists or invent
-commands. When tests are introduced, mock the Anthropic call in `claude_service.py` rather than
+commands. When tests are introduced, mock the LiteLLM call in `claude_service.py` rather than
 hitting the live API, and confirm the framework choice with the maintainer before adding a new
 dependency.
 
