@@ -9,3 +9,7 @@ catalog:
 overrides:
   react-d3-cloud>react: "catalog:"
   react-d3-cloud>react-dom: "catalog:"
+
+allowBuilds:
+  sharp: true
+  unrs-resolver: true
