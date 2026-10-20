@@ -35,21 +35,10 @@ RECOMMEND_MODEL = os.getenv("LLM_RECOMMEND_MODEL", "anthropic/claude-haiku-5-5")
 # USD per million tokens, used to price each row in llm_calls. LiteLLM's cost map can't be
 # used instead: for models it doesn't know (Claude 5.5 on 1.103.3) it returns $0 rather than
 # raising. A model missing here is logged with cost_usd NULL, so add any model you switch to.
-# Cache writes are the 5-minute TTL rate (1.25x input). Haiku 5.5's rates apply up to 100K
-# input tokens, far above any journal entry.
+# Haiku 5.5's rates apply up to 100K input tokens, far above any journal entry.
 PRICES_PER_MTOK = {
-    "anthropic/claude-sonnet-5-5": {
-        "input": Decimal("2.00"),
-        "output": Decimal("10.00"),
-        "cache_read": Decimal("0.20"),
-        "cache_write": Decimal("2.50"),
-    },
-    "anthropic/claude-haiku-5-5": {
-        "input": Decimal("0.10"),
-        "output": Decimal("0.50"),
-        "cache_read": Decimal("0.01"),
-        "cache_write": Decimal("0.125"),
-    },
+    "anthropic/claude-sonnet-5-5": {"input": Decimal("2.00"), "output": Decimal("10.00")},
+    "anthropic/claude-haiku-5-5": {"input": Decimal("0.10"), "output": Decimal("0.50")},
 }
 
 
@@ -183,10 +172,12 @@ async def _structured_call(
     check,
     messages: list[dict],
     effort: str,
+    eval_run_id: str | None = None,
 ) -> dict:
     # Structured outputs constrain the reply to `schema`. `check` enforces what the schema
     # can't express there (number ranges, array lengths) and a failed check gets one retry.
-    # Every attempt is recorded in llm_calls, since each one is billed.
+    # Every attempt is recorded in llm_calls, since each one is billed. eval_run_id is set
+    # only by the eval runner, so real-user rows keep it NULL.
     problem = None
     for _ in range(2):
         started = time.perf_counter()
@@ -198,9 +189,12 @@ async def _structured_call(
                 messages=messages,
             )
         except Exception as exc:
-            _record_call(name, model, _elapsed_ms(started), "error", error_type=type(exc).__name__)
+            _record_call(
+                name, model, _elapsed_ms(started), "error",
+                error_type=type(exc).__name__, eval_run_id=eval_run_id,
+            )
             raise
-        call = {"latency_ms": _elapsed_ms(started), **_token_usage(response)}
+        call = {"latency_ms": _elapsed_ms(started), "eval_run_id": eval_run_id, **_token_usage(response)}
         choice = response.choices[0]
         if choice.finish_reason == "content_filter":
             _record_call(name, model, status="refusal", **call)
@@ -225,36 +219,17 @@ def _elapsed_ms(started: float) -> int:
 
 
 def _token_usage(response) -> dict:
-    # LiteLLM normalizes usage across providers: prompt_tokens is all input, of which
-    # cached_tokens were cache reads and cache_creation_tokens (Anthropic only) cache writes.
+    # No prompt caching is requested, so all input is billed at the input rate. (A provider
+    # that caches on its own, like OpenAI, would make cost_usd run slightly high.)
     usage = response.usage
-    details = usage.prompt_tokens_details
-    cache_read = (details.cached_tokens if details else None) or 0
-    cache_creation = getattr(details, "cache_creation_tokens", None) or 0
-    return {
-        "input_tokens": usage.prompt_tokens - cache_read - cache_creation,
-        "cache_read_input_tokens": cache_read,
-        "cache_creation_input_tokens": cache_creation,
-        "output_tokens": usage.completion_tokens,
-    }
+    return {"input_tokens": usage.prompt_tokens, "output_tokens": usage.completion_tokens}
 
 
-def _cost_usd(
-    model: str,
-    input_tokens: int,
-    cache_read_input_tokens: int,
-    cache_creation_input_tokens: int,
-    output_tokens: int,
-) -> Decimal | None:
+def _cost_usd(model: str, input_tokens: int, output_tokens: int) -> Decimal | None:
     prices = PRICES_PER_MTOK.get(model)
     if prices is None:
         return None
-    return (
-        input_tokens * prices["input"]
-        + cache_read_input_tokens * prices["cache_read"]
-        + cache_creation_input_tokens * prices["cache_write"]
-        + output_tokens * prices["output"]
-    ) / 1_000_000
+    return (input_tokens * prices["input"] + output_tokens * prices["output"]) / 1_000_000
 
 
 def _record_call(
@@ -264,26 +239,21 @@ def _record_call(
     status: str,
     error_type: str | None = None,
     input_tokens: int = 0,
-    cache_read_input_tokens: int = 0,
-    cache_creation_input_tokens: int = 0,
     output_tokens: int = 0,
+    eval_run_id: str | None = None,
 ) -> None:
-    tokens = {
-        "input_tokens": input_tokens,
-        "cache_read_input_tokens": cache_read_input_tokens,
-        "cache_creation_input_tokens": cache_creation_input_tokens,
-        "output_tokens": output_tokens,
-    }
     db = SessionLocal()
     try:
         db.add(LLMCall(
             task=task,
             model=model,
+            eval_run_id=eval_run_id,
             status=status,
             error_type=error_type,
             latency_ms=latency_ms,
-            cost_usd=_cost_usd(model, **tokens),
-            **tokens,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            cost_usd=_cost_usd(model, input_tokens, output_tokens),
         ))
         db.commit()
     except Exception:
@@ -341,7 +311,11 @@ ANALYZE_SCHEMA = {
 }
 
 
-async def analyze_journal_entry(content: str, mood_label: str) -> dict:
+async def analyze_journal_entry(
+    content: str,
+    mood_label: str,
+    eval_run_id: str | None = None,
+) -> dict:
     return await _structured_call(
         ANALYZE_MODEL,
         "analyze_entry",
@@ -349,17 +323,11 @@ async def analyze_journal_entry(content: str, mood_label: str) -> dict:
         _check_analysis,
         # High effort because the safety flag rides on this call.
         effort="high",
+        eval_run_id=eval_run_id,
+        # No prompt caching on either call: entries arrive far more than 5 minutes apart, so a
+        # cache write (1.25x input price) would almost never be read back.
         messages=[
-            {
-                "role": "system",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": SYSTEM_PROMPT,
-                        "cache_control": {"type": "ephemeral"},
-                    }
-                ],
-            },
+            {"role": "system", "content": SYSTEM_PROMPT},
             {
                 "role": "user",
                 "content": (
@@ -447,6 +415,7 @@ async def recommend_exercises(
     distortions: list[str] | None = None,
     positive_patterns: list[str] | None = None,
     context: str = "",
+    eval_run_id: str | None = None,
 ) -> dict:
     return await _structured_call(
         RECOMMEND_MODEL,
@@ -454,11 +423,9 @@ async def recommend_exercises(
         RECOMMEND_SCHEMA,
         _check_exercises,
         effort="low",
+        eval_run_id=eval_run_id,
         messages=[
-            {
-                "role": "system",
-                "content": [{"type": "text", "text": RECOMMEND_SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}],
-            },
+            {"role": "system", "content": RECOMMEND_SYSTEM_PROMPT},
             {
                 "role": "user",
                 "content": (
