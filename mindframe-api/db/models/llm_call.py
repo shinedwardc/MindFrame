@@ -11,6 +11,8 @@ class LLMCall(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     task = Column(String, nullable=False, index=True)
     model = Column(String, nullable=False)
+    # Set by the eval runner for every call in one run; NULL means real-user traffic.
+    eval_run_id = Column(String, index=True)
     # success | invalid_output | refusal | truncated | error
     status = Column(String, nullable=False)
     error_type = Column(String)

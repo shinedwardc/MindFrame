@@ -41,7 +41,7 @@ Within those:
 | `mindframe-api/db/models/` | SQLAlchemy ORM models — source of truth for schema. |
 | `mindframe-api/models/` | Pydantic request/response schemas — kept separate from ORM models on purpose. |
 | `mindframe-api/db/session.py` | `get_db()` dependency injected into every route that needs DB access; `SessionLocal` for code outside a request (background tasks, call logging). |
-| `mindframe-api/sql/llm_call_stats.sql` | Per-task cost and p50/p95 latency query over `llm_calls`. |
+| `mindframe-api/sql/` | `llm_call_stats.sql` (real-user cost and p50/p95 latency per task) and `eval_run_stats.sql` (the same for one eval run). |
 
 Import alias: `@/*` maps to the `mindframe/` root (see `mindframe/tsconfig.json`).
 
@@ -120,6 +120,9 @@ calls `analyze_journal_entry` and `recommend_exercises` and sets the status to `
 writes one `llm_calls` row: task, model, status, input and output tokens, latency, and
 `cost_usd` priced from `PRICES_PER_MTOK` in `llm_service.py`. Prompt caching is deliberately
 off (entries arrive far more than 5 minutes apart, so cache writes never pay back).
+`eval_run_id` separates eval traffic: the eval runner passes it to `analyze_journal_entry` /
+`recommend_exercises`; routers never do, so real-user rows keep it NULL. Never pass it from a
+router, and filter on `eval_run_id IS NULL` for real-user numbers.
 Rows hold numbers and labels only — never prompt or response text. A failed log write is
 swallowed with a warning so it can't fail the analysis.
 

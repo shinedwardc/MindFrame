@@ -1,5 +1,6 @@
--- Phase 0 baseline: per-task cost and latency from llm_calls over the last 7 days.
+-- Phase 0 baseline: per-task cost and latency of real-user calls over the last 7 days.
 -- Each row is one attempt (retries included), so total_cost_usd is what was actually billed.
+-- Eval runs are excluded; see eval_run_stats.sql for those.
 SELECT
     task,
     model,
@@ -11,5 +12,6 @@ SELECT
     PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY latency_ms) AS p95_latency_ms
 FROM llm_calls
 WHERE created_at > now() - interval '7 days'
+  AND eval_run_id IS NULL
 GROUP BY task, model
 ORDER BY task, model;
