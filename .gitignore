@@ -14,9 +14,11 @@ __pycache__/
 dist/
 build/
 *.tsbuildinfo
+next-env.d.ts
 
 # misc
 .DS_Store
+documents/
 *.log
 
 .claude/

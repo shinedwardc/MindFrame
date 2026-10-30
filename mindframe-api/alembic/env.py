@@ -16,7 +16,7 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 from db.base import Base
-from db.models import User, JournalEntry  # noqa: F401 — registers models with metadata
+from db.models import User, JournalEntry, LLMCall  # noqa: F401 — registers models with metadata
 
 target_metadata = Base.metadata
 

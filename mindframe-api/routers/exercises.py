@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from models.exercises import ExerciseRequest, ExerciseResponse
-from services.claude_service import recommend_exercises
+from services.llm_service import recommend_exercises
 
 router = APIRouter()
 
