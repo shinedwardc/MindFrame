@@ -18,15 +18,10 @@ WORKDIR /app
 # Only the manifests are copied, so this layer is reused across source edits.
 FROM base AS deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-# strictDepBuilds=false: pnpm 11 fails the install when sharp and
-# unrs-resolver skip their build scripts, and the onlyBuiltDependencies
-# allowlist in pnpm-workspace.yaml does not suppress it. Skipping is safe
-# here -- both ship prebuilt musl binaries as optional deps
-# (@img/sharp-linuxmusl-x64, @img/sharp-libvips-linuxmusl-x64), which the
-# build script would only be needed to compile from source.
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    pnpm install --frozen-lockfile --store-dir=/pnpm/store \
-        --config.strictDepBuilds=false
+# No cache mount: Railway only accepts cache ids of the form s/<service id>-<path>,
+# which would tie this Dockerfile to one Railway service. The layer cache above
+# already skips this step until a manifest changes.
+RUN pnpm install --frozen-lockfile
 
 # ----------------------------------------------------------------- dev ----
 # Stops here for local work: devDeps intact, no source baked in — compose

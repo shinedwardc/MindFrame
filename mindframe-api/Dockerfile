@@ -20,8 +20,10 @@ WORKDIR /app
 # project and syncs dependencies without trying to build the app itself.
 FROM base AS deps
 COPY pyproject.toml uv.lock ./
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-install-project
+# No cache mount, for the same reason as in mindframe/Dockerfile: Railway rejects
+# cache ids that aren't tied to its own service ids. --no-cache keeps uv's
+# download cache out of the layer, since only the virtualenv is carried forward.
+RUN uv sync --frozen --no-install-project --no-cache
 
 # ----------------------------------------------------------------- dev ----
 FROM deps AS dev
@@ -41,5 +43,7 @@ COPY --chown=mindframe:mindframe . .
 USER mindframe
 EXPOSE 8000
 # 0.0.0.0, not localhost: uvicorn's default bind is unreachable from outside
-# the container regardless of how the port is published.
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# the container regardless of how the port is published. Hosting platforms
+# (Railway, Fly, Cloud Run) assign the port through $PORT, so the shell form is
+# needed to expand it; exec keeps uvicorn as PID 1 so it receives SIGTERM.
+CMD ["sh", "-c", "exec uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]

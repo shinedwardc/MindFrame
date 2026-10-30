@@ -39,6 +39,11 @@ services:
       DATABASE_URL: postgresql+psycopg://mindframe:mindframe@db:5432/mindframe
       # CORS origin is the browser's view of the frontend, not the internal name.
       FRONTEND_URL: http://localhost:3000
+    # Migrate before serving, so a fresh database comes up ready. A failed migration
+    # exits the container instead of serving against a stale schema. Railway runs the
+    # same migration as its pre-deploy command instead (see README, Deployment).
+    command:
+      ['sh', '-c', 'alembic upgrade head && exec uvicorn main:app --host 0.0.0.0 --port 8000']
     ports:
       - '8000:8000'
     depends_on:
