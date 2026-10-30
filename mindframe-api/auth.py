@@ -15,14 +15,15 @@ _security = HTTPBearer()
 
 # Auth.js v5 encrypts the session token with JWE (dir + A256CBC-HS512).
 # The key is derived from NEXTAUTH_SECRET via HKDF-SHA256, keyed to the cookie name.
-_COOKIE_NAME = "authjs.session-token"
+# Over HTTPS Auth.js prefixes the name with __Secure-, which changes the key, so both are tried.
+_COOKIE_NAMES = ("__Secure-authjs.session-token", "authjs.session-token")
 
 
-def _derive_key(secret: str) -> bytes:
+def _derive_key(secret: str, cookie_name: str) -> bytes:
     # Replicates Auth.js getDerivedEncryptionKey exactly:
     # hkdf("sha256", keyMaterial, salt=cookieName, info=`Auth.js Generated Encryption Key (${cookieName})`, 64)
-    salt = _COOKIE_NAME.encode() # Using cookie name as salt, per Auth.js implementation. The key is specifically for encrypting the session token cookie.
-    info = f"Auth.js Generated Encryption Key ({_COOKIE_NAME})".encode()
+    salt = cookie_name.encode() # Using cookie name as salt, per Auth.js implementation. The key is specifically for encrypting the session token cookie.
+    info = f"Auth.js Generated Encryption Key ({cookie_name})".encode()
     return HKDF(
         algorithm=hashes.SHA256(),
         length=64,
@@ -36,9 +37,14 @@ def _decode_session_token(token: str) -> dict:
     Decrypts the JWE session token and returns the payload as a dictionary.
     """
     secret = os.getenv("JWT_SECRET", "")
-    key = _derive_key(secret)
-    payload_bytes = jwe.decrypt(token, key)
-    return json.loads(payload_bytes)
+    last_error: Exception | None = None
+    for cookie_name in _COOKIE_NAMES:
+        try:
+            payload_bytes = jwe.decrypt(token, _derive_key(secret, cookie_name))
+            return json.loads(payload_bytes)
+        except Exception as e:
+            last_error = e
+    raise last_error
 
 
 def get_current_user(
