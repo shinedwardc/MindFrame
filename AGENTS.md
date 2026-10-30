@@ -23,7 +23,9 @@ Monorepo with two services:
 |---|---|
 | `mindframe/` | Next.js 16 frontend (App Router, Tailwind, Auth.js v5). |
 | `mindframe-api/` | FastAPI backend (SQLAlchemy, Alembic, LiteLLM → Anthropic/OpenAI), managed with uv. |
-| `docker-compose.yml` | PostgreSQL 16 only, on host port **5433** — both app servers run natively, not in containers. |
+| `docker-compose.yml` | Full stack — Postgres 16 (host port **5433**), FastAPI, Next.js — in production-shaped images. |
+| `docker-compose.override.yml` | Merged automatically by `docker compose up`; swaps in dev servers + bind mounts. |
+| `mindframe/Dockerfile`, `mindframe-api/Dockerfile` | Multi-stage; `dev` and `runner` targets share the same base layers. `runner` is the last stage, so a plain `docker build` (and Railway) produces the production image. |
 
 Within those:
 
@@ -31,7 +33,7 @@ Within those:
 |---|---|
 | `mindframe/app/` | App Router — pages and the single NextAuth API route. Signed-in pages live under `app/(app)/`. |
 | `mindframe/components/ui/` | shadcn-generated primitives (see `components.json`) — regenerate with the shadcn CLI rather than hand-restyling. |
-| `mindframe/lib/api.ts` | The only place that calls FastAPI — forwards the session token, hits `NEXT_PUBLIC_API_URL`. |
+| `mindframe/lib/api.ts` | The only place that calls FastAPI — forwards the session token, hits `API_URL`. |
 | `mindframe/lib/auth.ts` | Auth.js v5 config (Google provider, JWT session strategy). |
 | `mindframe/proxy.ts` | Edge proxy (Next.js 16's renamed Middleware) — gates every non-public route on a valid session. |
 | `mindframe-api/auth.py` | Decrypts the Auth.js session token; `get_current_user_id` dependency; creates the `users` row on first request. |
@@ -50,9 +52,25 @@ Import alias: `@/*` maps to the `mindframe/` root (see `mindframe/tsconfig.json`
 
 ## 2. Dev commands
 
-### Start Postgres (repo root)
+### Everything in containers (repo root)
 ```bash
-docker compose up -d     # postgres:16 on localhost:5433, user/password/db all "mindframe"
+docker compose up              # db + api + web, hot reload on both services
+docker compose up --build      # after changing a Dockerfile or a lockfile
+docker compose down            # stop (data survives in the postgres_data volume)
+docker compose run --rm api alembic upgrade head   # migrations, dev stack
+```
+Source is bind-mounted, so edits reload live — no rebuild needed for code changes. Both
+`.env` files (§4) must exist; compose reads them through `env_file:`.
+
+Production images (no reload, non-root, standalone build; the `api` service runs
+`alembic upgrade head` before uvicorn):
+```bash
+docker compose -f docker-compose.yml up --build
+```
+
+### Postgres only, app servers native (repo root)
+```bash
+docker compose up -d db  # postgres:16 on localhost:5433, user/password/db all "mindframe"
 ```
 
 ### Frontend (`mindframe/`) — pnpm 11 (pinned via `packageManager`), Node 26 (Volta)
@@ -96,26 +114,31 @@ uv run alembic check       # confirms the ORM models and migrations agree
 ```
 
 When adding a new ORM model, import it in `db/models/__init__.py` and `alembic/env.py` so
-Alembic detects it during `--autogenerate`. `alembic/env.py` and `db/session.py` read
-`DATABASE_URL` (from `.env`, overridable in the environment) — point it at a throwaway database
-when you want to test a migration without touching dev data.
+Alembic detects it during `--autogenerate`. `db/session.py` reads `DATABASE_URL` (from `.env`,
+overridable in the environment) and rewrites a hosted `postgres://` / `postgresql://` URL to the
+`postgresql+psycopg://` driver; `alembic/env.py` imports that same value. Point it at a throwaway
+database when you want to test a migration without touching dev data.
 
 ---
 
 ## 3. Architecture
 
 **Auth flow** — Auth.js v5 handles login via Google OAuth with the JWT session strategy (no
-database session). The session lives in the `authjs.session-token` cookie as an **encrypted JWE**
-(`dir` + `A256CBC-HS512`), not a signed JWT. `mindframe-api/auth.py` decrypts it with a key
-derived from the shared secret via HKDF-SHA256, replicating Auth.js's key derivation —
+database session). The session lives in the `authjs.session-token` cookie (named
+`__Secure-authjs.session-token` over HTTPS) as an **encrypted JWE** (`dir` + `A256CBC-HS512`),
+not a signed JWT. `mindframe-api/auth.py` decrypts it with a key derived from the shared secret
+via HKDF-SHA256 with the cookie name as salt, replicating Auth.js's key derivation (it tries
+both names, since the token itself doesn't say which cookie it came from).
 `AUTH_SECRET` (frontend) and `JWT_SECRET` (backend) must be identical. The backend identifies
 users by the token's `email` claim and creates the `users` row on first request. Next.js never
 writes to the database directly.
 
 **Next.js → FastAPI communication** — all data fetching goes through `mindframe/lib/api.ts`
-(`apiFetch`), which reads the raw `authjs.session-token` cookie server-side, sends it as a
-Bearer token, and calls FastAPI at `NEXT_PUBLIC_API_URL` (default `http://localhost:8000`).
-Next.js has no direct database access.
+(`apiFetch`), which reads the raw session cookie server-side (either name above), sends it as a
+Bearer token, and calls FastAPI at `API_URL` (default `http://localhost:8000`, `http://api:8000`
+in compose, the private `*.railway.internal` address on Railway). It is deliberately *not*
+`NEXT_PUBLIC_`-prefixed: only server components and server actions read it, and that prefix
+would inline the value at build time. Next.js has no direct database access.
 
 **Entry analysis** — `POST /journal/` saves the entry with `analysis_status = "pending"` and
 returns immediately; a FastAPI `BackgroundTask` (`_run_analysis` in `routers/journal.py`) then
@@ -152,8 +175,13 @@ There is no `.env.example`; these are the names the code reads.
 
 `mindframe/.env.local` — Auth.js v5 picks up its `AUTH_*` variables automatically:
 `AUTH_SECRET`, `AUTH_URL` (e.g. `http://localhost:3000`), `AUTH_GOOGLE_ID`,
-`AUTH_GOOGLE_SECRET`, plus `NEXT_PUBLIC_API_URL` (e.g. `http://localhost:8000`). The older
-`NEXTAUTH_*` / `GOOGLE_CLIENT_*` names are not used.
+`AUTH_GOOGLE_SECRET`, plus `API_URL` (e.g. `http://localhost:8000`). The older
+`NEXTAUTH_*` / `GOOGLE_CLIENT_*` / `NEXT_PUBLIC_API_URL` names are not used.
+
+Both files are consumed by compose via `env_file:`, so the same files work natively and in
+containers. Compose overrides `DATABASE_URL` and `API_URL` at runtime, since `localhost` inside
+a container is the container itself. On Railway the same names are set as service variables
+(README, Deployment).
 
 `mindframe-api/.env` — `DATABASE_URL`
 (`postgresql+psycopg://mindframe:mindframe@localhost:5433/mindframe` for the compose database),
@@ -367,10 +395,15 @@ BREAKING CHANGE: llm_service.generate_insight now returns a Result type instead 
   turn into an unforced tool call. Keep that branch when touching `_provider_kwargs`.
 - **`LITELLM_LOCAL_MODEL_COST_MAP=True` is set before `import litellm`** so importing it doesn't
   fetch the cost map from GitHub. Keep the import order in `llm_service.py`.
-- **The session cookie name is hardcoded** as `authjs.session-token` in `lib/api.ts` and
-  `auth.py` (it is also the HKDF salt). Auth.js prefixes it with `__Secure-` when served over
-  HTTPS, so both places need updating before an HTTPS deploy.
-- **`POST /exercises/recommend` has no auth dependency.** Anyone who can reach the API can trigger
-  paid model calls through it; its calls do show up in `llm_calls`.
+- **The session cookie has two names.** Auth.js uses `authjs.session-token` over HTTP and
+  `__Secure-authjs.session-token` over HTTPS, and the name is also the HKDF salt. `lib/api.ts`
+  reads either and `auth.py` tries both keys; keep the two lists in step if Auth.js's naming
+  changes (e.g. chunked `.0` / `.1` cookies for oversized tokens are not handled).
+- **Every route that can reach `llm_service.py` must depend on `get_current_user_id`** — each
+  call is billed. `POST /exercises/recommend` was once public; keep it gated.
+- **No `RUN --mount=type=cache` in the Dockerfiles.** Railway only accepts cache ids of the form
+  `s/<service id>-<path>`, so a generic cache mount fails its build.
+- **The API image listens on `$PORT` (default 8000).** Its `CMD` is shell-form for that
+  expansion; keep the `exec` so uvicorn stays PID 1 and gets SIGTERM.
 - **`next-env.d.ts` is generated and gitignored** — `pnpm dev` / `pnpm build` rewrite it; don't
   commit it.
