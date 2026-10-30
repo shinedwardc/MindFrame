@@ -6,12 +6,15 @@ instead of raw fetch.
 
 import { cookies } from 'next/headers';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+const API_URL = process.env.API_URL ?? 'http://localhost:8000';
 
 export const apiFetch = async <T>(path: string, options: RequestInit = {}): Promise<T> => {
 	const cookieStore = await cookies();
-	// FastAPI needs the raw JWT cookie string to verify the signature using JWT_SECRET
-	const token = cookieStore.get('authjs.session-token')?.value;
+	// FastAPI needs the raw JWT cookie string to verify the signature using JWT_SECRET.
+	// Auth.js adds the __Secure- prefix when served over HTTPS (any deploy), so check both names.
+	const token =
+		cookieStore.get('__Secure-authjs.session-token')?.value ??
+		cookieStore.get('authjs.session-token')?.value;
 
 	if (!token) throw new Error('No auth token found; user is not authenticated');
 

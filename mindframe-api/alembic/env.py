@@ -1,16 +1,13 @@
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
-import os
-from dotenv import load_dotenv
 
-load_dotenv()
+# Same URL the app uses, with the psycopg driver normalized in (see db/session.py).
+from db.session import DATABASE_URL
 
 config = context.config
-config.set_main_option(
-    "sqlalchemy.url",
-    os.getenv("DATABASE_URL"),
-)
+# configparser treats % as interpolation, which URL-encoded passwords contain.
+config.set_main_option("sqlalchemy.url", DATABASE_URL.replace("%", "%%"))
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)

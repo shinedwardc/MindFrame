@@ -18,7 +18,8 @@ A personal journaling app with AI-powered reflection. Write free-text entries, t
 |---|---|
 | Frontend | Next.js 16 (App Router), React 19, Tailwind CSS 4, Biome |
 | Backend | Python, FastAPI, SQLAlchemy 2, Alembic, Pydantic 2, uv |
-| Database | PostgreSQL 16 (Docker), SQLAlchemy (ORM), Alembic (migrations) |
+| Infra | Docker (multi-stage images, Compose), Railway |
+| Database | PostgreSQL 16, SQLAlchemy (ORM), Alembic (migrations) |
 | AI | LiteLLM → Anthropic Claude (Sonnet 5.5 for analysis, Haiku 5.5 for exercises by default); OpenAI models are configurable |
 | Auth | Auth.js v5 (NextAuth), Google OAuth |
 
@@ -39,29 +40,22 @@ A personal journaling app with AI-powered reflection. Write free-text entries, t
 │   ├── alembic/        # Database migrations
 │   ├── scripts/        # Dev scripts (seed_entries.py adds and analyzes sample entries)
 │   └── sql/            # Reporting queries (LLM cost and latency)
-└── docker-compose.yml  # PostgreSQL only
+├── docker-compose.yml           # Full stack: Postgres, API, web (production images)
+└── docker-compose.override.yml  # Dev mode: hot reload + bind mounts, merged by `docker compose up`
 ```
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js and pnpm 11 (versions pinned in `mindframe/package.json`: Volta pins Node 26.3.0, `packageManager` pins pnpm)
-- Python 3.11+ and [uv](https://docs.astral.sh/uv/)
-- Docker (for PostgreSQL)
+- Docker with Compose — enough on its own to run the whole stack
 - A Google OAuth client (for sign-in), with `http://localhost:3000/api/auth/callback/google` as an authorized redirect URI
 - An Anthropic API key
+- Only for running the app servers natively: Node.js and pnpm 11 (versions pinned in `mindframe/package.json`: Volta pins Node 26.3.0, `packageManager` pins pnpm), Python 3.11+ and [uv](https://docs.astral.sh/uv/)
 
-### 1. Start the database
+### 1. Create the env files
 
-```bash
-docker compose up -d
-```
-This runs PostgreSQL 16 in a container on **localhost:5433** (user, password and database are all `mindframe`).
-
-### 2. Backend
-
-Create `mindframe-api/.env` first — migrations and the API both read `DATABASE_URL` from it:
+`mindframe-api/.env` — migrations and the API both read `DATABASE_URL` from it:
 
 ```env
 DATABASE_URL=postgresql+psycopg://mindframe:mindframe@localhost:5433/mindframe
@@ -70,7 +64,42 @@ FRONTEND_URL=http://localhost:3000
 JWT_SECRET=<must match AUTH_SECRET>
 ```
 
-Then:
+`mindframe/.env.local` — Auth.js v5 reads its `AUTH_*` variables automatically:
+
+```env
+AUTH_SECRET=<must match JWT_SECRET>    # e.g. openssl rand -base64 32
+AUTH_URL=http://localhost:3000
+API_URL=http://localhost:8000
+AUTH_GOOGLE_ID=...
+AUTH_GOOGLE_SECRET=...
+```
+
+Compose reads both files and overrides `DATABASE_URL` and `API_URL` with in-network addresses, so the same files work for both ways of running the app below.
+
+### 2a. Run everything in Docker
+
+```bash
+docker compose up                                  # db + api + web, hot reload on both services
+docker compose run --rm api alembic upgrade head   # apply migrations (first run, and after new ones)
+```
+
+Open http://localhost:3000. Source is bind-mounted, so code edits reload live; rebuild with `docker compose up --build` after changing a Dockerfile or a lockfile.
+
+To run the production images instead (standalone Next.js build, non-root, no reload — migrations run automatically before the API starts):
+
+```bash
+docker compose -f docker-compose.yml up --build
+```
+
+### 2b. Or run the app servers natively
+
+Start only the database — PostgreSQL 16 on **localhost:5433** (user, password and database are all `mindframe`):
+
+```bash
+docker compose up -d db
+```
+
+Backend:
 
 ```bash
 cd mindframe-api
@@ -88,19 +117,7 @@ uv run uvicorn main:app --reload   # http://localhost:8000 — GET /health retur
 > commands inside the project environment and syncs it with `uv.lock` first — no manual
 > activate step. Running an activated `.venv` directly skips that sync, so prefer `uv run`.
 
-### 3. Frontend
-
-Create `mindframe/.env.local`. Auth.js v5 reads its `AUTH_*` variables automatically:
-
-```env
-AUTH_SECRET=<must match JWT_SECRET>    # e.g. openssl rand -base64 32
-AUTH_URL=http://localhost:3000
-NEXT_PUBLIC_API_URL=http://localhost:8000
-AUTH_GOOGLE_ID=...
-AUTH_GOOGLE_SECRET=...
-```
-
-Then:
+Frontend:
 
 ```bash
 cd mindframe
@@ -119,6 +136,44 @@ Optional backend settings in `mindframe-api/.env`:
 | `OPENAI_API_KEY` | — | Required once either model points at `openai/`. |
 
 Costs are computed from the price table `PRICES_PER_MTOK` in `mindframe-api/services/llm_service.py`. When you switch to a model that isn't listed there, add it, or its calls are logged without a cost.
+
+## Deployment
+
+MindFrame deploys as three containers on [Railway](https://railway.com): the two Dockerfiles in this repo plus Railway's managed Postgres. Services stay running (no cold starts), and only the frontend is public — the API is reachable solely over Railway's private network.
+
+```
+Browser ──HTTPS──▶ web (Next.js) ──private network──▶ api (FastAPI) ──▶ Postgres
+                                                           └──▶ Anthropic
+```
+
+One-time setup in the Railway dashboard:
+
+1. **New project → Deploy from GitHub repo**, pick this repo, then add **Database → PostgreSQL**.
+2. **API service** — name it `api` (the private hostname follows the name). Settings: Root Directory `mindframe-api`; Pre-deploy command `alembic upgrade head`; Healthcheck path `/health`. Don't generate a public domain. Variables:
+
+   | Variable | Value |
+   |---|---|
+   | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (the `postgresql://` scheme is rewritten to psycopg in `db/session.py`) |
+   | `PORT` | `8000` |
+   | `JWT_SECRET` | a fresh `openssl rand -base64 32` |
+   | `ANTHROPIC_API_KEY` | your key |
+   | `FRONTEND_URL` | `https://${{web.RAILWAY_PUBLIC_DOMAIN}}` |
+
+3. **Web service** — name it `web`. Settings: Root Directory `mindframe`; Networking → **Generate Domain** (target port 3000). Variables:
+
+   | Variable | Value |
+   |---|---|
+   | `API_URL` | `http://${{api.RAILWAY_PRIVATE_DOMAIN}}:${{api.PORT}}` |
+   | `PORT` | `3000` |
+   | `AUTH_SECRET` | the same value as the API's `JWT_SECRET` |
+   | `AUTH_URL` | `https://${{RAILWAY_PUBLIC_DOMAIN}}` |
+   | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | from Google Cloud |
+
+4. **Google Cloud** → your OAuth client → add `https://<web domain>/api/auth/callback/google` as an authorized redirect URI.
+5. **Cap spending** — set a monthly limit in the Anthropic console, and keep the OAuth consent screen in *Testing* with an explicit test-user list until you want open sign-ups.
+
+After that, every push to `main` redeploys both services; a failed migration stops the API deploy before it goes live. Railway builds the last Dockerfile stage (`runner`) — if a build log shows Railpack instead of Docker, the Dockerfile wasn't picked up from the Root Directory.
+
 
 ## Architecture
 
